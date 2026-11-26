@@ -1,8 +1,8 @@
 # Cxwl Depth Camera SDK
 
-Windows x64 深度相机 SDK 3.0.0，公开 C ABI v3，C++17 共用同一个 DLL。每个进程可采集一台相机，多个进程可按已登记身份分别选机。相机通过 USB 网卡连接 RV1103 设备服务预览版。六档深度均支持 RGB 视频、径向米制深度和板端同帧 XYZ。
+深度相机 SDK 3.0.0 支持 Windows x64、Linux x86-64 和 Linux ARM64。三平台共用 C ABI v3 和 C++17 封装。每个进程可采集一台相机，多个进程可按已登记身份分别选机。相机通过 USB 网卡连接 RV1103 设备服务预览版。六档深度均支持 RGB 视频、径向米制深度和板端同帧 XYZ。
 
-## 本地构建
+## Windows 本地构建
 
 需要 VS 2022 v143、Windows SDK 10.0.22621.0、Qt VS Tools 和 Qt 6.11.1 MSVC x64。使用构建脚本还需要 PowerShell 7。
 
@@ -26,6 +26,10 @@ Windows x64 深度相机 SDK 3.0.0，公开 C ABI v3，C++17 共用同一个 DLL
 ```
 
 [Visual Studio 解决方案](<Cxwl Depth Camera.sln>) 包含 C SDK、C 示例、桌面 Viewer 和独立 RGB 校正工具。输出在 `x64/Release`。使用 [Windows SDK 接入说明](docs/DEPTH_SDK_WINDOWS.md) 和 [C/C++ 示例](sdk/examples) 开始开发。公开入口为 [DepthSdk.h](sdk/DepthSdk.h)，点云在深度回调内通过 `CxwlDepth_GetFramePointCloud` 取得。
+
+## Linux 构建与集成
+
+Linux 以 Ubuntu 22.04 x86-64 和小端 ARM64 为验收基线。使用 CMake 构建 `libCxwlDepthSdk.so.3`，客户程序可通过 CMake 或 pkg-config 集成。Linux 交付流程包含七个 C/C++ 示例及 USB 网卡配置入口。[Linux SDK 接入说明](docs/DEPTH_SDK_LINUX.md)
 
 - [项目结构与构建材料](docs/ARCHITECTURE.md)
 - [离线及实机验证](docs/TESTING.md)

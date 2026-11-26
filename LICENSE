@@ -5,8 +5,9 @@ RGBD 深度相机 SDK 产品许可
 1. 授权范围
 本 SDK 的著作权人授予合法获得本 SDK 的客户免费、非独占的使用许可，
 用于连接和使用配套的 RGBD 深度相机。客户可以在自有或商业 C/C++ 应用中
-动态链接 Windows 的 CxwlDepthSdk.dll，并随应用分发 SDK/bin 内应用运行所需的
-配套运行库、控制程序和载荷，以及本许可和相应第三方许可材料。
+动态链接 Windows 的 CxwlDepthSdk.dll 或 Linux 的 libCxwlDepthSdk.so.3，并随应用分发
+对应平台 SDK/bin 或 SDK/lib 内应用运行所需的配套运行库、控制程序和载荷，
+以及本许可和相应第三方许可材料。
 Windows 的 CxwlDepthSdk.lib 是 DLL 导入库。本版本不提供静态 SDK，不授予未提供的静态
 构建或 SDK 核心源码再分发许可。不得将本 SDK 本体作为独立收费产品销售。
 
