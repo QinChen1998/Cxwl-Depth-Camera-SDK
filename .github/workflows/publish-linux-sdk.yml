@@ -1,0 +1,89 @@
+name: 发布 Linux SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: 已验收发布包对应的 main 完整提交 SHA
+        required: true
+        type: string
+      sha256_x64:
+        description: Linux x64 归档的 SHA-256
+        required: true
+        type: string
+      sha256_arm64:
+        description: Linux ARM64 归档的 SHA-256
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-sdk-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: Releases
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      SHA256_X64: ${{ inputs.sha256_x64 }}
+      SHA256_ARM64: ${{ inputs.sha256_arm64 }}
+    steps:
+      - name: 校验并发布已审批的 Linux 草稿
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ && "$SOURCE_COMMIT" == "$GITHUB_SHA" ]]
+          [[ "$SHA256_X64" =~ ^[0-9a-f]{64}$ && "$SHA256_ARM64" =~ ^[0-9a-f]{64}$ ]]
+          product=$(gh api "repos/$GH_REPO/contents/sdk/product.json?ref=$SOURCE_COMMIT" --jq '.content' | base64 --decode)
+          version=$(jq -er '.sdk_version | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))' <<< "$product")
+          [[ $(jq -r '.display_version' <<< "$product") == "v$version" ]]
+          tag="v$version-linux"
+          prefix="Cxwl-Depth-Camera-SDK-v$version-linux-"
+          x64_archive="${prefix}x64.tar.gz"
+          arm64_archive="${prefix}arm64.tar.gz"
+          names=$(jq -cn --arg x64 "$x64_archive" --arg arm64 "$arm64_archive" \
+            '[$x64, ($x64 + ".sha256"), $arm64, ($arm64 + ".sha256")] | sort')
+
+          draft=$(gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" |
+            jq -ce --arg tag "$tag" 'add | map(select(.tag_name == $tag)) | select(length == 1) | .[0] | select(.draft)')
+          [[ $(jq -r '.target_commitish' <<< "$draft") == "$SOURCE_COMMIT" ]]
+          release_id=$(jq -r '.id' <<< "$draft")
+
+          draft_assets() {
+            jq -ce --argjson names "$names" \
+              '.assets | select((map(.name) | sort) == $names and all(.[]; .state == "uploaded")) |
+               map({id, name, size, digest}) | sort_by(.id)'
+          }
+          assets=$(draft_assets <<< "$draft")
+
+          verify_archive() {
+            local archive=$1 hash=$2 archive_id checksum_id
+            archive_id=$(jq -r --arg name "$archive" '.[] | select(.name == $name) | .id' <<< "$assets")
+            checksum_id=$(jq -r --arg name "$archive.sha256" '.[] | select(.name == $name) | .id' <<< "$assets")
+            gh api "repos/$GH_REPO/releases/assets/$archive_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/$archive"
+            gh api "repos/$GH_REPO/releases/assets/$checksum_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/$archive.sha256"
+            printf '%s  %s\n' "$hash" "$archive" | (cd "$RUNNER_TEMP"; sha256sum --strict --check)
+            cmp "$RUNNER_TEMP/$archive.sha256" <(printf '%s  %s\n' "$hash" "$archive")
+          }
+          verify_archive "$x64_archive" "$SHA256_X64"
+          verify_archive "$arm64_archive" "$SHA256_ARM64"
+
+          gh api "repos/$GH_REPO/git/matching-refs/tags/$tag" |
+            jq -e --arg ref "refs/tags/$tag" --arg sha "$SOURCE_COMMIT" \
+              '[.[] | select(.ref == $ref)] | all(.[]; .object.type == "commit" and .object.sha == $sha)' > /dev/null
+          current=$(gh api "repos/$GH_REPO/releases/$release_id")
+          jq -e --arg tag "$tag" --arg sha "$SOURCE_COMMIT" \
+            '.draft and .tag_name == $tag and .target_commitish == $sha' <<< "$current" > /dev/null
+          [[ $(draft_assets <<< "$current") == "$assets" ]]
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" --field draft=false \
+            --raw-field target_commitish="$SOURCE_COMMIT" --raw-field make_latest=false --jq '.html_url'

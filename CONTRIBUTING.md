@@ -24,4 +24,6 @@ git config --local core.hooksPath .githooks
 
 先按 [Windows SDK 本地交付](docs/SOURCE_DISTRIBUTION.md#windows-sdk-本地交付) 验收 ZIP，再创建草稿，并附上 ZIP 和同名 `.sha256` 文件。草稿的目标提交必须是用于制作包的 `main` 提交。通过 **发布 Windows SDK** 工作流提交版本标签和 ZIP 的 SHA-256。
 
+Linux 的 x64 和 ARM64 按 [Linux SDK 本地交付](docs/SOURCE_DISTRIBUTION.md#linux-sdk-本地交付) 各自完成离线、RV1103 实机和成品校验后，再创建同一 SDK 版本的 Linux 草稿。Linux 标签使用 `v<版本号>-linux`，例如 `v3.0.0-linux`。草稿指向用于制包的 `main` 提交，并附上两个 `.tar.gz` 及各自的 `.sha256`。通过 **发布 Linux SDK** 工作流指定该提交和两个归档的 SHA-256。
+
 发布工作流只能从 `main` 运行。`Releases` 环境要求仓库所有者或任意一位现任管理员审批，审批后复核草稿、提交和资产摘要，再发布到 GitHub。GitHub Releases 同时允许有写权限的账号直接操作，因此普通贡献者使用 fork，仓库写权限仅授予所有者和管理员。仓库发布和更正均走审批流程。
