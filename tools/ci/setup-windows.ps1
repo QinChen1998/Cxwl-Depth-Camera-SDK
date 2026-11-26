@@ -6,6 +6,10 @@ $ErrorActionPreference = 'Stop'
 $ArchiveDirectory = [IO.Path]::GetFullPath($ArchiveDirectory)
 $Destination = [IO.Path]::GetFullPath($Destination)
 New-Item -ItemType Directory -Path $ArchiveDirectory, $Destination -Force | Out-Null
+$sevenZip = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
+if (!(Test-Path -LiteralPath $sevenZip -PathType Leaf)) {
+    $sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source
+}
 
 function Get-VerifiedArchive([string]$Url, [string]$ExpectedHash) {
     $archive = Join-Path $ArchiveDirectory ([Uri]$Url).Segments[-1]
@@ -26,11 +30,9 @@ function Get-VerifiedArchive([string]$Url, [string]$ExpectedHash) {
     return $archive
 }
 
-function Expand-Dependency([string]$Archive, [string]$Target, [string[]]$Members = @(), [switch]$StripTopDirectory) {
+function Expand-Dependency([string]$Archive, [string]$Target, [string[]]$Members = @()) {
     New-Item -ItemType Directory -Path $Target -Force | Out-Null
-    $tarArguments = @('-xf', $Archive, '-C', $Target)
-    if ($StripTopDirectory) { $tarArguments += '--strip-components=1' }
-    & tar.exe @tarArguments @Members
+    & $sevenZip x -y -bso0 -bsp0 "-o$Target" $Archive @Members
     if ($LASTEXITCODE) { throw "Cannot extract $Archive" }
 }
 
@@ -53,6 +55,11 @@ foreach ($part in $hashes.Keys) {
         $ffmpegFiles = @('bin/avcodec-61.dll', 'bin/avformat-61.dll', 'bin/avutil-59.dll',
             'bin/swscale-8.dll', 'bin/swresample-5.dll')
         Expand-Dependency $archive $qt -Members $ffmpegFiles
+        foreach ($file in $ffmpegFiles) {
+            if (!(Test-Path -LiteralPath (Join-Path $qt $file) -PathType Leaf)) {
+                throw "FFmpeg archive did not provide $file"
+            }
+        }
     } else {
         Expand-Dependency $archive $qt
     }
@@ -66,7 +73,14 @@ $sourceUrl = 'https://download.qt.io/official_releases/qt/6.11/6.11.1/submodules
 $source = Get-VerifiedArchive $sourceUrl 'd9594a31228aa23ad6b531719a29b45f0f3989fe6c136d45767ea179f233c1ac'
 $licenseFiles = @('qtbase-everywhere-src-6.11.1/LICENSES/GPL-3.0-only.txt',
     'qtbase-everywhere-src-6.11.1/LICENSES/LGPL-3.0-only.txt')
-Expand-Dependency $source (Join-Path $Destination '6.11.1/Src/qtbase') -Members $licenseFiles -StripTopDirectory
+$sourceDirectory = Join-Path $Destination '6.11.1/Src'
+Expand-Dependency $source $sourceDirectory
+$sourceTar = Join-Path $sourceDirectory 'qtbase-everywhere-src-6.11.1.tar'
+$qtBase = Join-Path $sourceDirectory 'qtbase'
+New-Item -ItemType Directory -Path $qtBase -Force | Out-Null
+& tar.exe -xf $sourceTar -C $qtBase --strip-components=1 @licenseFiles
+if ($LASTEXITCODE) { throw 'Cannot extract Qt Base licenses.' }
+Remove-Item -LiteralPath $sourceTar
 
 $version = & (Join-Path $qt 'bin/qmake.exe') -query QT_VERSION
 if ($LASTEXITCODE -or $version -ne '6.11.1') { throw 'Qt installation check failed.' }

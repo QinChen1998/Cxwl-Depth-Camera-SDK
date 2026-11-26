@@ -19,7 +19,7 @@ fetch_source https://download.qt.io/official_releases/qt/6.11/6.11.1/submodules/
     cd "$work/qt-build"
     "$work/qtbase-everywhere-src-6.11.1/configure" -opensource -confirm-license -release -shared \
         -nomake examples -nomake tests -no-feature-widgets -no-feature-sql -no-feature-xcb \
-        -no-feature-opengl -no-feature-vulkan -no-feature-icu -openssl-linked \
+        -no-opengl -no-feature-vulkan -no-feature-icu -openssl-linked \
         -prefix "$prefix/qt-6.11.1" -- -DCMAKE_INSTALL_LIBDIR=lib
 )
 cmake --build "$work/qt-build" --parallel 4
