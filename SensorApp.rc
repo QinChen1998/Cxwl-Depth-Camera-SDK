@@ -1,0 +1,12 @@
+1 ICON "assets\\cx.ico"
+
+#if defined(CXWL_DESKTOP_VALIDATION)
+#define CXWL_BINARY_NAME "CxwlDesktopValidation.exe"
+#elif defined(CXWL_DESKTOP_BUILD)
+#define CXWL_BINARY_NAME "Cxwl Depth Camera.exe"
+#define CXWL_FILE_DESCRIPTION "Cxwl Depth Camera"
+#else
+#define CXWL_BINARY_NAME "CxwlDepthViewer.exe"
+#endif
+#define CXWL_BINARY_TYPE VFT_APP
+#include "sdk/ProductVersion.rc"

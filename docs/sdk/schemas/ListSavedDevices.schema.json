@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ListSavedDevices",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "不透明设备 ID，供管理器及连接选项使用。"
+      },
+      "name": {
+        "type": "string",
+        "description": "自定义显示名。档案使用系统默认名称时，此查询返回空字符串，档案本身不变。"
+      },
+      "selected": {
+        "type": "boolean",
+        "description": "是否当前默认。"
+      },
+      "ready": {
+        "type": "boolean",
+        "description": "设备档案的连接准备状态。实时连接状态通过 GetSessionStatus 查询。"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "selected",
+      "ready"
+    ],
+    "additionalProperties": true
+  }
+}

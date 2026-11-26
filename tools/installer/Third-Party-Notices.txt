@@ -1,0 +1,36 @@
+RGBD 深度相机 SDK v3.0.0 - Third-party notices
+
+Qt 6.11.1 (The Qt Company and contributors)
+The package uses the LGPL-3.0 license option for Qt Base (Core, Gui, Widgets,
+Network, Concurrent), SVG and image-format plugins. Qt Quick 3D, Qt QML and
+Qt Quick are not used. The SDK example code is separately licensed under MIT.
+https://doc.qt.io/qt-6.11/licensing.html
+https://download.qt.io/archive/qt/6.11/6.11.1/single/
+The Qt LGPL and referenced GPL license texts and matching SBOMs are included.
+The SDK and its examples are distributed under the licenses at LICENSE and Example/LICENSE.
+The selected Qt libraries are dynamically linked and may be replaced with
+compatible modified versions. No Qt source modifications are made here.
+
+FFmpeg 7.1.3 (FFmpeg developers), LGPL-2.1-or-later
+The included avcodec/avformat/avutil/swresample/swscale shared libraries report
+"LGPL version 2.1 or later"; the build does not enable GPL or nonfree components.
+https://ffmpeg.org/releases/ffmpeg-7.1.3.tar.xz
+https://code.qt.io/cgit/qt/qtmultimedia.git/tree/coin?h=v6.11.1
+The matching license, binary build configuration and upstream source locations
+are provided. No FFmpeg source modifications are made here.
+
+Corresponding source offer and replacement
+For at least three years from this release, recipients may request the complete
+corresponding sources and build materials for the redistributed LGPL libraries
+through the channel that supplied this SDK, at no more than the reasonable cost of delivery.
+Identify the SDK release by including sdk-manifest.json with the request.
+The upstream locations above also provide the unmodified source distributions.
+Recipients may modify, replace and relink the LGPL libraries, and reverse-engineer
+the application as needed to debug those modifications. Replace compatible DLLs
+at the same relative paths.
+Script/verify-sdk.ps1 will intentionally report a changed third-party library;
+regenerate your own deployment manifest when distributing a modified build.
+
+Microsoft Visual C++ runtime is deployed application-locally under Microsoft's
+redistribution terms. It is not relicensed by this product license.
+https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files

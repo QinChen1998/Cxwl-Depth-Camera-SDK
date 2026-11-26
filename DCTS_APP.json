@@ -1,0 +1,13 @@
+{
+  "application": "CxwlDepthCamera",
+  "schema": 1,
+  "modules": [
+    "depth",
+    "point_cloud",
+    "camera"
+  ],
+  "imaging_schemes": [
+    "board_native_tof48",
+    "board_native_tof48_high_accuracy"
+  ]
+}

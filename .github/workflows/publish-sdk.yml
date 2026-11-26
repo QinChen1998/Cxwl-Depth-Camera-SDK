@@ -1,0 +1,65 @@
+name: 发布 Windows SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: SDK 版本标签，例如 v3.0.0
+        required: true
+        type: string
+      sha256:
+        description: 已验收 SDK ZIP 的 SHA-256
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-sdk-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: Releases
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SDK_TAG: ${{ inputs.tag }}
+      SDK_SHA256: ${{ inputs.sha256 }}
+    steps:
+      - name: 校验并发布已审批草稿
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SDK_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$SDK_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          product=$(gh api "repos/$GH_REPO/contents/sdk/product.json?ref=$GITHUB_SHA" --jq '.content' | base64 --decode)
+          jq -e --arg tag "$SDK_TAG" '.display_version == $tag' <<< "$product"
+
+          draft=$(gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" |
+            jq -ce --arg tag "$SDK_TAG" 'add | map(select(.tag_name == $tag)) | select(length == 1) | .[0] | select(.draft)')
+          [[ $(jq -r '.target_commitish' <<< "$draft") == "$GITHUB_SHA" ]]
+          release_id=$(jq -r '.id' <<< "$draft")
+          name="Cxwl-Depth-Camera-SDK-$SDK_TAG-windows-x64.zip"
+          assets=$(jq -ce --arg name "$name" '
+            .assets | select(length == 2) |
+            select(all(.[]; .state == "uploaded")) |
+            select((map(.name) | sort) == [$name, ($name + ".sha256")])' <<< "$draft")
+          zip_asset=$(jq -r --arg name "$name" '.[] | select(.name == $name) | .id' <<< "$assets")
+          checksum_asset=$(jq -r --arg name "$name.sha256" '.[] | select(.name == $name) | .id' <<< "$assets")
+          gh api "repos/$GH_REPO/releases/assets/$zip_asset" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/sdk.zip"
+          actual=$(sha256sum "$RUNNER_TEMP/sdk.zip" | cut -d ' ' -f 1)
+          [[ "$actual" == "$SDK_SHA256" ]]
+          checksum=$(gh api "repos/$GH_REPO/releases/assets/$checksum_asset" -H 'Accept: application/octet-stream')
+          [[ "$checksum" == "$SDK_SHA256 *$name" ]]
+
+          if existing=$(gh api "repos/$GH_REPO/git/ref/tags/$SDK_TAG" 2>/dev/null); then
+            jq -e --arg sha "$GITHUB_SHA" '.object.type == "commit" and .object.sha == $sha' <<< "$existing"
+          fi
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" --field draft=false \
+            --raw-field "target_commitish=$GITHUB_SHA" --jq '.html_url'

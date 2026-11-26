@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <QtInstall Condition="'$(QtInstall)' == ''">$(CXWL_QT_ROOT)</QtInstall>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)..\QtDevelopment.local.props"
+          Condition="'$(QtInstall)' == '' and Exists('$(MSBuildThisFileDirectory)..\QtDevelopment.local.props')" />
+</Project>

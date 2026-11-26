@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GetState",
+  "type": "object",
+  "properties": {
+    "connection_state": {
+      "type": "string",
+      "enum": ["connecting", "connected", "reconnecting", "error", "stopping", "stopped", "disconnecting"],
+      "description": "connecting/connected/reconnecting/error/stopping/stopped/disconnecting；所有连接入口均提供。"
+    },
+    "error": {
+      "type": "string",
+      "description": "Connect 系列为错误分类字符串或空；Open 会话为内部诊断文本或空。程序优先读取 GetSessionStatus.error_category。"
+    },
+    "busy": {
+      "type": "boolean",
+      "description": "操作执行／退出中。"
+    },
+    "mode": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ],
+      "description": "SDK 模式常量（不是板端 24/25）；以头文件定义为准。"
+    },
+    "video_available": {
+      "type": "boolean",
+      "description": "当前代次视频可用。"
+    },
+    "depth_available": {
+      "type": "boolean",
+      "description": "当前代次深度可用。"
+    },
+    "connection_stage": {
+      "type": "integer",
+      "description": "0=IDLE，1=CHECKING，3=STARTING，4=WAITING_FOR_DEPTH；保留 2。"
+    },
+    "retaining_display": {
+      "type": "boolean",
+      "description": "恢复期间可临时保留上一帧像素。"
+    },
+    "switch_active": {
+      "type": "boolean",
+      "description": "正在切档。"
+    },
+    "switch_estimated_ms": {
+      "type": "integer",
+      "description": "切档估计耗时，毫秒。"
+    },
+    "video_fps": {
+      "type": "number",
+      "description": "主机观察到的原视频帧率。"
+    },
+    "depth_clear_reason": {
+      "type": "string",
+      "description": "深度清除原因；诊断字符串，可为空。"
+    },
+    "board_files_device_id": {
+      "type": "string",
+      "description": "需要修复的设备不透明 ID；无则空。"
+    },
+    "usb_error": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "USB 诊断文本；没有 USB 对象时可能省略或为 null。"
+    },
+    "device_id": {
+      "type": "string",
+      "description": "Open 会话选中设备的登记 ID。"
+    },
+    "user_stopped": {
+      "type": "boolean",
+      "description": "Open 会话主动停止标志。"
+    },
+    "retry_pending": {
+      "type": "boolean",
+      "description": "Open 会话待重连。"
+    },
+    "board_files_required": {
+      "type": "boolean",
+      "description": "Open 会话要求修复板端文件。"
+    },
+    "epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Open 会话的展示代次；Connect 系列从结构化状态读取 session_epoch。"
+    },
+    "state": {
+      "type": "string",
+      "description": "Open 会话可读状态文字，不作为枚举解析。"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Open 会话的详细状态文字。"
+    }
+  },
+  "required": [
+    "connection_state",
+    "error",
+    "busy",
+    "mode",
+    "video_available",
+    "depth_available",
+    "connection_stage",
+    "retaining_display",
+    "switch_active",
+    "switch_estimated_ms",
+    "video_fps",
+    "depth_clear_reason",
+    "board_files_device_id"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.21)
+project(CXWLQtViewer LANGUAGES CXX RC)
+if(NOT TARGET CXWL::DepthSdk)
+  find_package(CxwlDepthSdk 3.0 CONFIG REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../../SDK/cmake" NO_DEFAULT_PATH)
+endif()
+find_package(Qt6 6.11.1 REQUIRED COMPONENTS Widgets Network)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_CXX_STANDARD 17)
+include(sources.cmake)
+add_executable(CxwlDepthViewer WIN32 ${CXWL_VIEWER_SOURCES})
+target_compile_definitions(CxwlDepthViewer PRIVATE CXWL_INSTALLER_BUILD NOMINMAX)
+target_compile_options(CxwlDepthViewer PRIVATE /utf-8 /Zc:__cplusplus)
+target_link_libraries(CxwlDepthViewer PRIVATE CXWL::DepthSdk Qt6::Widgets Qt6::Network)
+set_target_properties(CxwlDepthViewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/FULL")
+cxwl_deploy_runtime(CxwlDepthViewer PROFILE FULL)
+get_target_property(qmake Qt6::qmake IMPORTED_LOCATION)
+get_filename_component(qt_bin "${qmake}" DIRECTORY)
+add_custom_command(TARGET CxwlDepthViewer POST_BUILD
+  COMMAND "${qt_bin}/windeployqt.exe" --no-translations --compiler-runtime --no-opengl-sw --no-system-d3d-compiler --no-system-dxc-compiler "$<TARGET_FILE:CxwlDepthViewer>"
+  COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:CxwlDepthViewer>/translations"
+  COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${qt_bin}/../translations/qtbase_zh_CN.qm"
+    "$<TARGET_FILE_DIR:CxwlDepthViewer>/translations/qtbase_zh_CN.qm"
+  VERBATIM)

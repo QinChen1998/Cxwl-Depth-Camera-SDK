@@ -1,0 +1,3 @@
+#define CXWL_BINARY_NAME "CxwlDepthQuickStart.exe"
+#define CXWL_BINARY_TYPE VFT_APP
+#include "ProductVersion.rc"

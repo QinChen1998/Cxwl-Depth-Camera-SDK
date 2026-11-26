@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FrameMetadata",
+  "type": "object",
+  "properties": {
+    "width": {
+      "const": 48,
+      "description": "输出深度列数。"
+    },
+    "height": {
+      "const": 32,
+      "description": "输出深度行数。"
+    },
+    "depth_unit": {
+      "const": "sensor_radial_m_float32",
+      "description": "径向米制 float32。"
+    },
+    "depth_location": {
+      "const": "native_sensor",
+      "description": "原生测距。"
+    },
+    "native_order": {
+      "const": true,
+      "description": "保留原网格顺序。"
+    },
+    "interpolation": {
+      "const": false,
+      "description": "不插值。"
+    },
+    "source_generation": {
+      "type": "string",
+      "description": "板端采集代次；与帧 capture_generation_utf8 对应。"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "主机展示代次；与 session_epoch 对应。"
+    },
+    "frame_id": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "板端测量帧号。"
+    },
+    "tof_sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "板端深度序号。"
+    },
+    "tof_timestamp_ns": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "板端单调时间，纳秒；按 64 位整数读取。"
+    },
+    "calibration_release": {
+      "type": "string",
+      "description": "本次应用的板端标定版本。"
+    },
+    "sensor_mode": {
+      "type": "integer",
+      "enum": [
+        11,
+        12
+      ],
+      "description": "传感器预设。"
+    },
+    "candidate_mode": {
+      "type": "integer",
+      "enum": [
+        24,
+        25
+      ],
+      "description": "板端普通／高精度模式。"
+    },
+    "model": {
+      "type": "string",
+      "description": "当前模式显示名。"
+    },
+    "raw_age_ms": {
+      "type": "number",
+      "description": "接收路径估计的数据年龄，包含请求往返耗时，单位毫秒。"
+    },
+    "dtof_fov_correction": {
+      "const": 6,
+      "description": "深度处理采用的 ToF 视场校正档位，本产品为 6（F6）。传感器自身的档位见 sensor_fov_correction。"
+    },
+    "tof_reused": {
+      "const": false,
+      "description": "未重用旧深度。"
+    },
+    "work_mode": {
+      "const": "dtof_candidate",
+      "description": "原生深度路径。"
+    },
+    "dtof_width": {
+      "const": 48,
+      "description": "原始测距列数。"
+    },
+    "dtof_height": {
+      "const": 32,
+      "description": "原始测距行数。"
+    },
+    "dtof_bytes": {
+      "const": 6144,
+      "description": "原始测距包字节数（每点 4 字节）。"
+    },
+    "dtof_format": {
+      "const": "range_uq2_u16le_snr_u8_valid_u8",
+      "description": "板端原始数据布局。"
+    },
+    "dtof_range_unit": {
+      "const": "0.25_mm",
+      "description": "原始测距量化单位；输出图像已换成米。"
+    },
+    "dtof_source": {
+      "const": "tmf8829_ipc_first_peak",
+      "description": "原始测距来源标识。"
+    },
+    "dtof_coordinate": {
+      "const": "sensor_radial_native",
+      "description": "原生径向坐标。"
+    },
+    "tof_filter_raw_preserved": {
+      "const": true,
+      "description": "原始测距保留。"
+    },
+    "pairing_policy": {
+      "const": "independent_streams",
+      "description": "深度和视频的输出方式；independent_streams 表示分别输出。"
+    },
+    "sensor_fov_correction": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "板端回执的传感器 FOV 设定；有标定回执时出现。"
+    },
+    "processing_fov_correction": {
+      "const": 6,
+      "description": "标定回执中的处理档位，与 dtof_fov_correction 对应，本产品为 6。"
+    },
+    "temporary_fov_calibration": {
+      "type": "boolean",
+      "description": "是否临时覆盖；有标定回执时出现。"
+    },
+    "tof_calibration": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1,
+          "description": "板端标定回执版本。"
+        },
+        "run_id": {
+          "type": "string",
+          "description": "dtof_ 加板端采集代次。"
+        },
+        "sensor_fov_correction": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "传感器 FOV 设定。"
+        },
+        "processing_fov_correction": {
+          "const": 6,
+          "description": "标定回执中的处理视场校正档位，6 对应 F6。"
+        },
+        "temporary_calibration": {
+          "type": "boolean",
+          "description": "传感器 FOV 与处理 FOV 是否不同。"
+        }
+      },
+      "required": [
+        "schema",
+        "run_id",
+        "sensor_fov_correction",
+        "processing_fov_correction",
+        "temporary_calibration"
+      ],
+      "additionalProperties": true
+    },
+    "raw_board_age_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "raw_request_roundtrip_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "raw_callback_dispatch_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "raw_age_lower_bound_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "raw_age_upper_bound_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "raw_host_dispatch_ns": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    }
+  },
+  "required": [
+    "width",
+    "height",
+    "depth_unit",
+    "depth_location",
+    "native_order",
+    "interpolation",
+    "source_generation",
+    "generation",
+    "frame_id",
+    "tof_sequence",
+    "tof_timestamp_ns",
+    "calibration_release",
+    "sensor_mode",
+    "candidate_mode",
+    "model",
+    "raw_age_ms",
+    "dtof_fov_correction",
+    "tof_reused",
+    "work_mode",
+    "dtof_width",
+    "dtof_height",
+    "dtof_bytes",
+    "dtof_format",
+    "dtof_range_unit",
+    "dtof_source",
+    "dtof_coordinate",
+    "tof_filter_raw_preserved",
+    "pairing_policy"
+  ],
+  "additionalProperties": true
+}

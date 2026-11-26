@@ -1,0 +1,151 @@
+{
+  "ListDevices": [
+    {
+      "id": "sample-device",
+      "name": "RGBD Camera",
+      "host": "192.0.2.1",
+      "serial": "SAMPLE",
+      "ready": true,
+      "selected": true,
+      "family": "CXWL Depth Camera",
+      "modes": [
+        1,
+        2
+      ],
+      "supported_modes": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  ],
+  "ListSavedDevices": [
+    {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "name": "",
+      "selected": true,
+      "ready": true
+    }
+  ],
+  "GetState_Connect": {
+    "connection_state": "connected",
+    "error": "",
+    "busy": false,
+    "mode": 1,
+    "video_available": true,
+    "depth_available": true,
+    "connection_stage": 0,
+    "retaining_display": false,
+    "switch_active": false,
+    "switch_estimated_ms": 0,
+    "video_fps": 29.8,
+    "depth_clear_reason": "",
+    "board_files_device_id": "",
+    "usb_error": ""
+  },
+  "GetState_Open": {
+    "connection_state": "connected",
+    "error": "",
+    "busy": false,
+    "mode": 1,
+    "video_available": true,
+    "depth_available": true,
+    "connection_stage": 0,
+    "retaining_display": false,
+    "switch_active": false,
+    "switch_estimated_ms": 0,
+    "video_fps": 29.8,
+    "depth_clear_reason": "",
+    "board_files_device_id": "",
+    "usb_error": "",
+    "device_id": "sample-device",
+    "user_stopped": false,
+    "retry_pending": false,
+    "board_files_required": false,
+    "epoch": 1,
+    "state": "采集中",
+    "detail": ""
+  },
+  "GetUsbStatus": {
+    "state": "registration_required",
+    "check_id": 1,
+    "phase": "adb_identity_and_delivery_probe",
+    "error": "",
+    "device_id": "",
+    "runtime_replaced": false,
+    "attachment_id": "sample-attachment",
+    "known": false,
+    "absent": false
+  },
+  "GetUsbStatus_Idle": {
+    "state": "idle",
+    "check_id": 0
+  },
+  "GetDeviceManagerState": {
+    "busy": false,
+    "can_manage": true,
+    "usb": {
+      "state": "registration_required",
+      "check_id": 1,
+      "phase": "adb_identity_and_delivery_probe",
+      "error": "",
+      "runtime_replaced": false,
+      "attachment_id": "sample-attachment",
+      "known": false,
+      "absent": false
+    },
+    "maintenance": {
+      "state": "ready",
+      "exit_code": 0,
+      "error": "",
+      "archived_rollbacks": 1,
+      "runtime_replaced": false
+    },
+    "recovery": {
+      "state": "idle"
+    }
+  },
+  "FrameMetadata": {
+    "width": 48,
+    "height": 32,
+    "depth_unit": "sensor_radial_m_float32",
+    "depth_location": "native_sensor",
+    "native_order": true,
+    "interpolation": false,
+    "dtof_fov_correction": 6,
+    "tof_reused": false,
+    "work_mode": "dtof_candidate",
+    "dtof_width": 48,
+    "dtof_height": 32,
+    "dtof_bytes": 6144,
+    "dtof_format": "range_uq2_u16le_snr_u8_valid_u8",
+    "dtof_range_unit": "0.25_mm",
+    "dtof_source": "tmf8829_ipc_first_peak",
+    "dtof_coordinate": "sensor_radial_native",
+    "tof_filter_raw_preserved": true,
+    "pairing_policy": "independent_streams",
+    "processing_fov_correction": 6,
+    "source_generation": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "generation": 1,
+    "frame_id": 20,
+    "tof_sequence": 20,
+    "tof_timestamp_ns": 1000000000,
+    "calibration_release": "sample-f6-release",
+    "sensor_mode": 11,
+    "candidate_mode": 24,
+    "model": "Native48",
+    "raw_age_ms": 0.4,
+    "sensor_fov_correction": 6,
+    "temporary_fov_calibration": false,
+    "tof_calibration": {
+      "schema": 1,
+      "run_id": "dtof_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "sensor_fov_correction": 6,
+      "processing_fov_correction": 6,
+      "temporary_calibration": false
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "cxwl-depth-sdk",
+  "version": "3.0.0",
+  "description": "RGBD camera Windows x64 C/C++ binary SDK, ABI v3",
+  "supports": "windows & x64 & !static",
+  "default-features": [
+    "capture"
+  ],
+  "features": {
+    "capture": {
+      "description": "Native USB capture and FFmpeg decoding"
+    },
+    "viewer": {
+      "description": "Qt Widgets and GUI plugins",
+      "dependencies": [
+        {
+          "name": "cxwl-depth-sdk",
+          "default-features": false,
+          "features": [
+            "capture"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="sdk\DepthSdk.cpp"/>
+    <ClCompile Include="sdk\DepthProjection.cpp"/>
+    <ClCompile Include="RuntimeDiscovery.cpp"/>
+    <ClCompile Include="sensors\RvDeviceStore.cpp"/>
+    <ClCompile Include="sensors\RvDtofBoardStream.cpp"/>
+    <ClCompile Include="sensors\RvDtofCandidates.cpp"/>
+    <ClCompile Include="sensors\RvSessionController.cpp"/>
+    <ClCompile Include="sensors\RvTunerController.cpp"/>
+    <ClCompile Include="sensors\RvTunerProtocol.cpp"/>
+    <ClCompile Include="sdk\windows\UsbEnrollment.cpp"/>
+    <ClCompile Include="sdk\windows\DeviceService.cpp"/>
+    <ClCompile Include="sdk\windows\CameraTransport.cpp"/>
+    <ClInclude Include="sdk\windows\CameraTransport.h"/>
+    <ClInclude Include="sdk\windows\DeviceService.h"/>
+    <ClInclude Include="sdk\windows\DeviceTrust.h"/>
+    <ClInclude Include="sdk\DepthSdk.h"/>
+    <ClInclude Include="sdk\DepthSdkExports.h"/>
+    <ClInclude Include="sdk\DepthSdkQt.h"/>
+    <ClInclude Include="RuntimeDiscovery.h"/>
+    <ClInclude Include="sensors\RvDeviceStore.h"/>
+    <ClInclude Include="sensors\RvDtofBoardStream.h"/>
+    <ClInclude Include="sensors\RvDtofCandidates.h"/>
+    <ClInclude Include="sensors\RvImagingSchemes.h"/>
+    <ClInclude Include="sensors\RvTunerProtocol.h"/>
+    <ClInclude Include="sensors\RvUsbEnrollment.h"/>
+    <QtMoc Include="sensors\RvSessionController.h"/>
+    <QtMoc Include="sensors\RvTunerController.h"/>
+  </ItemGroup>
+<ItemGroup><ClInclude Include="sdk\DepthSdkVersion.h"/><ResourceCompile Include="sdk\ProductVersion.rc"/></ItemGroup>
+</Project>

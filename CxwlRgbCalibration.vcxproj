@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="17.0">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{41AA465A-84D0-4902-9D45-12F3C0AE4798}</ProjectGuid>
+    <Keyword>QtVS_v304</Keyword>
+    <RootNamespace>CxwlRgbCalibration</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <QtMsBuild>$(UserProfile)\AppData\Local\QtMsBuild</QtMsBuild>
+  </PropertyGroup>
+  <Import Project="tools\QtDevelopment.props"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+  <PropertyGroup>
+    <OutDir>$(MSBuildProjectDirectory)\x64\$(Configuration)\</OutDir>
+    <CxwlIntermediateRoot Condition="'$(CxwlIntermediateRoot)' == ''">$(MSBuildProjectDirectory)\x64\obj_$(Configuration)</CxwlIntermediateRoot>
+    <IntDir>$(CxwlIntermediateRoot)\rgb_calibration\</IntDir>
+    <TargetName>CxwlRgbCalibration</TargetName>
+  </PropertyGroup>
+  <Import Project="$(QtMsBuild)\qt_defaults.props"/>
+  <PropertyGroup Label="QtSettings">
+    <QtModules>core;gui;widgets;network;concurrent</QtModules>
+    <QtBuildConfig Condition="'$(Configuration)' == 'Debug'">debug</QtBuildConfig>
+    <QtBuildConfig Condition="'$(Configuration)' == 'Release'">release</QtBuildConfig>
+  </PropertyGroup>
+  <Import Project="$(QtMsBuild)\Qt.props"/>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <WarningLevel>Level3</WarningLevel>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <AdditionalOptions>/utf-8 /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>bcrypt.lib;advapi32.lib;iphlpapi.lib;setupapi.lib;cfgmgr32.lib;ws2_32.lib;uuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(CxwlInstallerBuild)' == 'true'">
+    <ClCompile><PreprocessorDefinitions>CXWL_INSTALLER_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Release'">
+    <ClCompile><Optimization>MaxSpeed</Optimization><DebugInformationFormat>ProgramDatabase</DebugInformationFormat></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Debug'">
+    <ClCompile><Optimization>Disabled</Optimization><DebugInformationFormat>ProgramDatabase</DebugInformationFormat></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="tools\rgb_calibration\main.cpp"/>
+    <ClCompile Include="tools\rgb_calibration\Calibration.cpp"/>
+    <ClCompile Include="tools\rgb_calibration\Estimate.cpp"/>
+    <ClCompile Include="sdk\windows\CameraTransport.cpp"/>
+    <ClCompile Include="sensors\RvDeviceStore.cpp"/>
+    <ClCompile Include="RuntimeDiscovery.cpp"/>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+  <Import Project="$(QtMsBuild)\qt.targets"/>
+</Project>

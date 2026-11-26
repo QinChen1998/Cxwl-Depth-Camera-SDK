@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CxwlDepthSelfTest -Report (schema 1)",
+  "type": "object",
+  "required": ["schema", "passed", "environment", "process", "expected_sdk_version", "sdk_version", "sdk_build", "expected_abi_version", "abi_version", "expected_exports", "capabilities", "missing_exports", "checks", "last_error"],
+  "properties": {
+    "schema": {"const": 1},
+    "passed": {"type": "boolean"},
+    "environment": {
+      "type": "object",
+      "required": ["platform", "logical_processors"],
+      "properties": {
+        "platform": {"enum": ["linux-x64", "linux-arm64", "windows-x64"]},
+        "logical_processors": {"type": "integer"},
+        "kernel": {"type": ["string", "null"]},
+        "native_architecture": {"type": "integer"},
+        "windows_version": {"type": ["string", "null"]},
+        "physical_memory_bytes": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "if": {"properties": {"platform": {"const": "windows-x64"}}},
+      "then": {"required": ["native_architecture", "windows_version", "physical_memory_bytes"]},
+      "else": {"required": ["kernel"]}
+    },
+    "process": {
+      "type": "object",
+      "properties": {
+        "wall_time_ms": {"$ref": "#/$defs/metric"},
+        "cpu_time_ms": {"$ref": "#/$defs/metric"},
+        "peak_working_set_bytes": {"$ref": "#/$defs/metric"},
+        "private_bytes": {"$ref": "#/$defs/metric"}
+      }
+    },
+    "expected_sdk_version": {"type": "string"},
+    "sdk_version": {"type": "string"},
+    "sdk_build": {"type": "string"},
+    "expected_abi_version": {"$ref": "#/$defs/count"},
+    "abi_version": {"$ref": "#/$defs/count"},
+    "expected_exports": {"$ref": "#/$defs/count"},
+    "capabilities": {
+      "type": "object", "required": ["max_sessions", "mode_count", "depth_width", "depth_height"],
+      "additionalProperties": {"$ref": "#/$defs/count"}
+    },
+    "missing_exports": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^CxwlDepth_"}},
+    "checks": {
+      "type": "object", "required": ["exports", "version", "abi", "capabilities", "board_cloud_api"],
+      "description": "library_loaded 表示本平台的 SDK 共享库已加载。dll_loaded 是 schema 1 的历史兼容别名，两者同时存在时值相同；读取旧报告时可回退到 dll_loaded。",
+      "anyOf": [{"required": ["library_loaded"]}, {"required": ["dll_loaded"]}],
+      "additionalProperties": {"type": "boolean"}
+    },
+    "last_error": {
+      "type": "object", "required": ["code", "function", "message"],
+      "properties": {"code": {"type": "integer"}, "function": {"type": "string"}, "message": {"type": "string"}}
+    }
+  },
+  "if": {"properties": {"passed": {"const": true}}},
+  "then": {"properties": {"missing_exports": {"maxItems": 0}, "checks": {"additionalProperties": {"const": true}}}},
+  "$defs": {
+    "count": {"type": "integer", "minimum": 0},
+    "metric": {"type": ["integer", "null"], "minimum": 0}
+  }
+}

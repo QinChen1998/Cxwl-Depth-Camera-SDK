@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GetUsbStatus",
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "description": "idle/checking/ready/network_required/update_required/registration_required/enrolling/enrolled/using_saved_device/cancelled/error。业务用检查 ID 和状态共同判断。"
+    },
+    "check_id": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "有效 USB 检查 ID；0 表示无有效检查。按 64 位整数读取。"
+    },
+    "phase": {
+      "type": "string",
+      "description": "诊断阶段字符串；可新增。无检查对象时省略。"
+    },
+    "error": {
+      "type": "string",
+      "description": "诊断文本，成功时可为空；无检查对象时省略。"
+    },
+    "device_id": {
+      "type": "string",
+      "description": "会话级 USB 状态中的内部登记 ID；管理器的 usb 对象移除此字段。"
+    },
+    "runtime_replaced": {
+      "type": "boolean",
+      "description": "是否替换运行文件。"
+    },
+    "attachment_id": {
+      "type": "string",
+      "description": "接入指纹，不透明值。"
+    },
+    "host_authorization_id": {"type": "string", "description": "每台相机和当前 Windows 用户的主机授权标识。"},
+    "known": {
+      "type": "boolean",
+      "description": "发现时是否已登记。"
+    },
+    "absent": {
+      "type": "boolean",
+      "description": "是否未发现 USB。"
+    }
+  },
+  "required": [
+    "state",
+    "check_id"
+  ],
+  "additionalProperties": true
+}

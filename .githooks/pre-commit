@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python -B tools/check_repository_policy.py --staged

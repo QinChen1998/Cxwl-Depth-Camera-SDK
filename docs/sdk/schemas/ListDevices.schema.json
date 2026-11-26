@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ListDevices",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "设备 ID；Open 为内部登记 ID，Connect 为不透明 ID；勿解析。"
+      },
+      "name": {
+        "type": "string",
+        "description": "显示名，可为空。"
+      },
+      "host": {
+        "type": "string",
+        "description": "设备连接地址；对外日志须脱敏。"
+      },
+      "serial": {
+        "type": "string",
+        "description": "登记序列号，可为空；须脱敏。"
+      },
+      "ready": {
+        "type": "boolean",
+        "description": "设备档案的连接准备状态。实时连接状态通过 GetSessionStatus 查询。"
+      },
+      "selected": {
+        "type": "boolean",
+        "description": "是否当前所选。"
+      },
+      "family": {
+        "const": "CXWL Depth Camera",
+        "description": "兼容的设备族标识。"
+      },
+      "modes": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "description": "兼容原有客户端的 48×32 SDK 模式值。"
+      },
+      "supported_modes": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "description": "运行库支持的全部 SDK 模式值。对较早的运行库可回退读取 modes。"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "host",
+      "serial",
+      "ready",
+      "selected",
+      "family",
+      "modes"
+    ],
+    "additionalProperties": true
+  }
+}
