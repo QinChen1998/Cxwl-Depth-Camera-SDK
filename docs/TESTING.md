@@ -1,5 +1,13 @@
 # 本地验证
 
+## GitHub Actions
+
+目标为 main 的 PR 和合并后的 main 提交运行 SDK 构建与离线验证。检查使用 GitHub 托管的 Windows Server 2022 x64、Ubuntu 22.04 x64 和 Ubuntu 22.04 ARM64 runner。PR 测试以与 main 合并后的代码为准，任务日志和保留七天的验证摘要可用于定位失败。
+
+Windows 使用 VS 2022 和固定的 Qt/MSBuild 归档，构建解决方案并运行 ABI、桌面回归和从暂存目录构建的随包样例。Linux 在两个架构上分别从已校验的源码构建 Qt 和 FFmpeg，运行 CTest、SDK ABI、JSON 和样例验证。CI 暂存目录用于离线消费端测试。发布所需的 RV1103 实机验收仍按下文在对应架构执行。
+
+## Windows x64
+
 构建环境见 [项目首页](../README.md)。每次验收选用新的输出目录。正常构建后，使用下列命令验证 ABI 并构建带测试入口的桌面程序。
 
 ```powershell
