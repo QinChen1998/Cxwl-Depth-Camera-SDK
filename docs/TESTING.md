@@ -1,5 +1,13 @@
 # 本地验证
 
+## GitHub Actions
+
+目标为 main 的 PR 和合并后的 main 提交运行 SDK 构建与离线验证。检查使用 GitHub 托管的 Windows Server 2022 x64、Ubuntu 22.04 x64 和 Ubuntu 22.04 ARM64 runner。PR 测试以与 main 合并后的代码为准，任务日志和保留七天的验证摘要可用于定位失败。
+
+Windows 使用 VS 2022 和固定的 Qt/MSBuild 归档，构建解决方案并运行 ABI、桌面回归和从暂存目录构建的随包样例。Linux 在两个架构上分别从已校验的源码构建 Qt 和 FFmpeg，运行 CTest、SDK ABI、JSON 和样例验证。CI 暂存目录用于离线消费端测试。发布所需的 RV1103 实机验收仍按下文在对应架构执行。
+
+## Windows x64
+
 构建环境见 [项目首页](../README.md)。每次验收选用新的输出目录。正常构建后，使用下列命令验证 ABI 并构建带测试入口的桌面程序。
 
 ```powershell
@@ -18,7 +26,7 @@ python -B tools/validate_sdk_live_outputs.py --development-runtime --runtime x64
 
 ## Linux x86-64 与 ARM64
 
-按 [Linux 接入说明](DEPTH_SDK_LINUX.md) 为两架构分别构建并安装一份待验运行目录。`ctest` 检查 C++ 封装与 Linux 主机授权文件的重开、权限和符号链接拒绝。使用对应架构的 Ubuntu 22.04 用户空间运行以下命令。离线入口需要 Python 3、jsonschema、C/C++ 编译器、CMake、pkg-config 和 binutils。
+按 [Linux 接入说明](DEPTH_SDK_LINUX.md) 为两架构分别构建并安装一份待验运行目录。`ctest` 检查 C++ 封装与 Linux 主机授权文件的重开、权限和符号链接拒绝。使用对应架构的 Ubuntu 22.04 用户空间运行以下命令。离线入口需要 Python 3、支持 Draft 2020-12 的 jsonschema、C/C++ 编译器、CMake、pkg-config 和 binutils。CI 在独立 Python 环境中使用 jsonschema 4.26.0。
 
 ```bash
 ctest --test-dir "$build" --output-on-failure

@@ -1,0 +1,163 @@
+name: SDK 构建与离线验证
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  windows:
+    name: sdk-windows-x64
+    runs-on: windows-2022
+    timeout-minutes: 45
+    env:
+      CI_OUTPUT: x64/validation/ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: 恢复 Windows 依赖归档
+        id: windows-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cxwl-windows-archives
+          key: sdk-windows-2022-archives-${{ hashFiles('tools/ci/setup-windows.ps1') }}
+      - name: 验证归档并准备 Qt
+        shell: pwsh
+        run: |
+          ./tools/ci/setup-windows.ps1 -ArchiveDirectory "$env:RUNNER_TEMP/cxwl-windows-archives" -Destination "$env:RUNNER_TEMP/cxwl-windows"
+      - name: 缓存已校验的 Windows 依赖归档
+        if: steps.windows-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cxwl-windows-archives
+          key: ${{ steps.windows-cache.outputs.cache-primary-key }}
+      - name: 构建解决方案并运行 ABI 与桌面回归
+        shell: pwsh
+        run: |
+          $qt = "$env:RUNNER_TEMP/cxwl-windows/6.11.1/msvc2022_64"
+          $qtMsBuild = "$env:RUNNER_TEMP/cxwl-windows/QtMsBuild"
+          ./tools/build_desktop.ps1 -Configuration Release -Validation -QtRoot $qt -QtMsBuild $qtMsBuild
+          python -B tests/test_depth_sdk_abi.py --dll x64/Release/CxwlDepthSdk.dll --output "$env:CI_OUTPUT/abi"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python -B tools/run_offline_tests.py --configuration Release --qt-root $qt --local-runtime --output "$env:CI_OUTPUT/desktop"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: 构建和运行随包样例
+        shell: pwsh
+        run: |
+          $qt = "$env:RUNNER_TEMP/cxwl-windows/6.11.1/msvc2022_64"
+          $qtMsBuild = "$env:RUNNER_TEMP/cxwl-windows/QtMsBuild"
+          $version = (Get-Content -LiteralPath sdk/product.json -Raw | ConvertFrom-Json).sdk_version
+          $examples = "$env:RUNNER_TEMP/cxwl-examples-$env:GITHUB_RUN_ATTEMPT"
+          $stage = "$env:CI_OUTPUT/production"
+          ./tools/installer/build.ps1 -BuildDirectory $stage -StageOnly -Version $version -QtRoot $qt -QtMsBuild $qtMsBuild
+          $staging = @{
+            BinaryDirectory = "$stage/desktop"
+            RuntimePayload = "$stage/payload"
+            OutputDirectory = "$env:RUNNER_TEMP/cxwl-sdk-$env:GITHUB_RUN_ATTEMPT"
+            QtRoot = $qt
+            ExampleBuildDirectory = $examples
+          }
+          ./tools/package_depth_sdk.ps1 @staging -ValidateExamplesOnly
+      - name: 上传 Windows 测试摘要和诊断日志
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: sdk-windows-x64-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            x64/Release/build.log
+            x64/Release/deploy.log
+            ${{ env.CI_OUTPUT }}/production/build.log
+            ${{ env.CI_OUTPUT }}/desktop/summary.json
+            ${{ env.CI_OUTPUT }}/desktop/*-test.log
+            ${{ runner.temp }}/cxwl-examples-${{ github.run_attempt }}/offline-output/self-test.json
+
+  linux:
+    name: sdk-linux-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    env:
+      SDK_ARCH: ${{ matrix.arch }}
+      LC_ALL: C.UTF-8
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: 安装 Ubuntu 22.04 构建依赖
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential binutils libdbus-1-dev libfontconfig1-dev libglib2.0-dev \
+            libpcre2-dev libpng-dev libssl-dev libxkbcommon-dev libzstd-dev \
+            nasm ninja-build patchelf pkg-config python3-venv zlib1g-dev
+          uname -m
+          cmake --version
+      - name: 安装 JSON Schema Draft 2020-12 验证器
+        shell: bash
+        run: |
+          /usr/bin/python3 -m venv "$RUNNER_TEMP/cxwl-ci-venv"
+          "$RUNNER_TEMP/cxwl-ci-venv/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: jsonschema==4.26.0
+      - name: 恢复当前架构的 Qt 和 FFmpeg
+        id: linux-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cxwl-linux-deps
+          key: sdk-ubuntu-22.04-${{ matrix.arch }}-deps-${{ hashFiles('tools/ci/setup-linux.sh') }}
+      - name: 从源码构建 Qt 和 FFmpeg
+        if: steps.linux-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: bash tools/ci/setup-linux.sh "$RUNNER_TEMP/cxwl-linux-deps"
+      - name: 缓存当前架构的 Qt 和 FFmpeg
+        if: steps.linux-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cxwl-linux-deps
+          key: ${{ steps.linux-cache.outputs.cache-primary-key }}
+      - name: 构建 SDK 并运行 CTest
+        shell: bash
+        run: |
+          build="$RUNNER_TEMP/cxwl-sdk-build"
+          cmake -S . -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/cxwl-linux-deps/qt-6.11.1"
+          cmake --build "$build" --parallel 4
+          ctest --test-dir "$build" --output-on-failure --no-tests=error
+      - name: 暂存运行库并验证随包样例
+        shell: bash
+        run: |
+          python="$RUNNER_TEMP/cxwl-ci-venv/bin/python"
+          "$python" -B tools/linux/stage.py --arch "$SDK_ARCH" \
+            --build "$RUNNER_TEMP/cxwl-sdk-build" --deps "$RUNNER_TEMP/cxwl-linux-deps" \
+            --output "$RUNNER_TEMP/cxwl-sdk-stage" --examples-build "$RUNNER_TEMP/cxwl-examples-build"
+          "$python" -B tools/linux/validate_offline.py --arch "$SDK_ARCH" \
+            --stage "$RUNNER_TEMP/cxwl-sdk-stage" --output "$RUNNER_TEMP/cxwl-offline"
+      - name: 上传 Linux 测试摘要和诊断日志
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: sdk-linux-${{ matrix.arch }}-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/cxwl-sdk-build/Testing/Temporary/LastTest.log
+            ${{ runner.temp }}/cxwl-offline/summary.json
+            ${{ runner.temp }}/cxwl-offline/*.log

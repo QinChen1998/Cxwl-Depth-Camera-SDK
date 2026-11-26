@@ -6,7 +6,8 @@ param(
     [switch]$StageOnly,
     [string]$Iscc='',
     [string]$ChineseMessages='',
-    [switch]$UseStagedPayload
+    [switch]$UseStagedPayload,
+    [string]$QtMsBuild=''
 )
 $ErrorActionPreference='Stop'
 $project=(Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
@@ -69,10 +70,12 @@ if(-not $UseStagedPayload){
 
     Invoke-Native (Join-Path $qt 'bin/lrelease.exe') @(
         (Join-Path $project 'translations/hand_zh_CN.ts'),'-qm',(Join-Path $project 'translations/hand_zh_CN.qm'))
-    Invoke-Native $toolchain.MSBuild @(
+    $buildArguments=@(
         (Join-Path $project 'Cxwl Depth Camera.sln'),'/t:Build','/p:Configuration=Release','/p:Platform=x64',
         "/p:QtInstall=$qt",'/p:CxwlInstallerBuild=true',"/p:OutDir=$desktop/","/p:CxwlIntermediateRoot=$work/obj",
         '/m:2','/nologo','/v:minimal',"/flp:logfile=$work/build.log;verbosity=normal")
+    if($QtMsBuild){$buildArguments+="/p:QtMsBuild=$((Resolve-Path -LiteralPath $QtMsBuild).Path)"}
+    Invoke-Native $toolchain.MSBuild $buildArguments
 
     New-Item -ItemType Directory -Path $payload | Out-Null
     Copy-Item -LiteralPath (Join-Path $desktop $exe) -Destination $payload

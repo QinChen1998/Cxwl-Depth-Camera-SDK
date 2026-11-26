@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory)][string]$OutputDirectory,
     [string]$DocumentationDirectory = '',
     [string]$QtRoot = '',
-    [string]$ExampleBuildDirectory = ''
+    [string]$ExampleBuildDirectory = '',
+    [switch]$ValidateExamplesOnly
 )
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
@@ -146,16 +147,18 @@ if (Test-Path -LiteralPath (Join-Path $project 'docs/sdk/images')) {
     Copy-Item -LiteralPath (Join-Path $project 'docs/sdk/images') -Destination $viewer -Recurse
 }
 
-if (!$DocumentationDirectory) {
-    $DocumentationDirectory = Join-Path $project 'x64/validation/depth-sdk-doxygen'
-    & (Join-Path $PSScriptRoot 'build_depth_sdk_docs.ps1') -OutputDirectory $DocumentationDirectory
+if (!$ValidateExamplesOnly) {
+    if (!$DocumentationDirectory) {
+        $DocumentationDirectory = Join-Path $project 'x64/validation/depth-sdk-doxygen'
+        & (Join-Path $PSScriptRoot 'build_depth_sdk_docs.ps1') -OutputDirectory $DocumentationDirectory
+    }
+    $doc = Join-Path $output 'Doc/api/Chinese'
+    New-Item -ItemType Directory -Path $doc | Out-Null
+    Get-ChildItem -LiteralPath $DocumentationDirectory | Where-Object { $_.Name -notin 'xml','warnings.log' } |
+        Copy-Item -Destination $doc -Recurse
+    if (!(Test-Path -LiteralPath (Join-Path $doc 'index.html'))) { throw 'Doxygen reference is missing.' }
+    if (!(Test-Path -LiteralPath (Join-Path $doc '点云录制数据读取说明.pdf') -PathType Leaf)) { throw 'Customer point cloud recording guide is missing.' }
 }
-$doc = Join-Path $output 'Doc/api/Chinese'
-New-Item -ItemType Directory -Path $doc | Out-Null
-Get-ChildItem -LiteralPath $DocumentationDirectory | Where-Object { $_.Name -notin 'xml','warnings.log' } |
-    Copy-Item -Destination $doc -Recurse
-if (!(Test-Path -LiteralPath (Join-Path $doc 'index.html'))) { throw 'Doxygen reference is missing.' }
-if (!(Test-Path -LiteralPath (Join-Path $doc '点云录制数据读取说明.pdf') -PathType Leaf)) { throw 'Customer point cloud recording guide is missing.' }
 Copy-Item -LiteralPath (Join-Path $project 'tools/diagnose_cxwl_depth_camera_usb.ps1'),(Join-Path $template 'verify-sdk.ps1'),(Join-Path $template 'build-examples.ps1') -Destination $script
 & python (Join-Path $PSScriptRoot 'audit_sdk_runtime.py') --root $runtime --output (Join-Path $output 'Licenses/runtime-license-audit.json')
 if ($LASTEXITCODE) { throw 'Runtime license/module audit failed.' }
@@ -167,6 +170,8 @@ $sampleBuild = if ($ExampleBuildDirectory) { [IO.Path]::GetFullPath($ExampleBuil
     else { Join-Path $project ('x64/validation/sdk-samples-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff')) }
 $manifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding utf8NoBOM
 & (Join-Path $script 'build-examples.ps1') -BuildDirectory $sampleBuild -CMake $cmakeExecutable -WithViewer -QtRoot $QtRoot -RunOfflineTests
+# The CI staging directory is used only to build and run these consumer examples.
+if ($ValidateExamplesOnly) { return }
 foreach ($name in 'QuickStart','Quality','DeviceManagement','PointCloud','CppQuickStart','ThreadedCapture','SelfTest') {
     $profile = if ($name -eq 'SelfTest') { 'MINIMAL' } else { 'STANDARD' }
     Copy-Item -LiteralPath (Join-Path $sampleBuild "bin/$profile/Release/CxwlDepth$name.exe") -Destination $bin -Force
