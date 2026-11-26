@@ -6,6 +6,8 @@
 
 namespace DeviceService::Transport {
 void require(bool valid, const QString &why);
+QHostAddress cameraAddress(quint32 local);
+void bindInterface(QSslSocket &socket, const Endpoint &endpoint);
 Identity verified(const RvDeviceProfile &device);
 QByteArray credential(const Identity &identity, bool create);
 std::unique_ptr<QSslSocket> openChannel(const Endpoint &endpoint, const QString &expected);

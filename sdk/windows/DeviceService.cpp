@@ -1,14 +1,4 @@
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <cfgmgr32.h>
-#include <iphlpapi.h>
-#include <setupapi.h>
-#include <devguid.h>
-#include <wincred.h>
-#include <bcrypt.h>
 #include "DeviceService.h"
-#include "DeviceTrust.h"
 #include "../../sensors/RvTunerProtocol.h"
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QDir>

@@ -50,3 +50,16 @@ if ($LASTEXITCODE) { throw '成品内容检查失败' }
 ```
 
 最终只压缩 `$final` 客户目录。将 ZIP 解压到新的临时目录，在解压后的包根再次运行 `./Script/verify-sdk.ps1 -Strict`，并记录 ZIP 的 SHA-256。缺少实机或登记档案时仍可完成试制包和离线校验，交付记录须注明实机待验。正式发布需另行授权。
+
+## Linux SDK 本地交付
+
+参照 [Linux SDK 接入说明](DEPTH_SDK_LINUX.md) 分别暂存 x64、ARM64 运行库和七个样例。每个架构独立完成 [离线及实机验收](TESTING.md#linux-x86-64-与-arm64) 后，再用原样运行目录生成对应的 `.tar.gz` 和 `.sha256`。
+
+```bash
+python3 -B tools/linux/package.py --arch x64 --stage "$stage" \
+  --offline "$work/offline/summary.json" --live "$work/live/camera/summary.json" \
+  --samples "$work/live/samples.json" --qt-licenses "$qtbase/LICENSES" \
+  --output "$output"
+```
+
+ARM64 传入 `--arch arm64` 及该架构的记录。`tools/linux/build_docs.py` 生成该架构的离线 API 手册。可用 `--manual` 与 `--qt-sbom` 加入手册和 Qt SBOM，用 `--windows-reference` 核对已解压 Windows x64 成品的三个公开头文件和 DLL 导出。制包脚本核对架构、ABI、完整运行时和样例的摘要，再解压归档复核包内 `SHA256SUMS`。随包提供统计与验收回执，设备档案、主机授权及原始采集留在本地验证目录。

@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -7,6 +8,7 @@
 #include <devguid.h>
 #include <wincred.h>
 #include <bcrypt.h>
+#endif
 #include "DeviceService.h"
 #include "DeviceTrust.h"
 #include <QtCore/QCryptographicHash>
@@ -39,6 +41,12 @@ namespace Transport {
 void require(bool valid,const QString &why) {
     if(!valid) throw std::runtime_error(why.toUtf8().constData());
 }
+QHostAddress cameraAddress(quint32 local) {
+    if((local>>16)==0xa9fe) return QHostAddress("169.254.77.1");
+    if((local>>16)==0xac20) return QHostAddress("172.32.0.93");
+    return {};
+}
+#ifdef _WIN32
 QMap<QString,QString> usbParents() {
     QMap<QString,QString> results;
     HDEVINFO devices=SetupDiGetClassDevsW(&GUID_DEVCLASS_NET,nullptr,nullptr,DIGCF_PRESENT);
@@ -70,6 +78,12 @@ QMap<QString,QString> usbParents() {
     SetupDiDestroyDeviceInfoList(devices);
     return results;
 }
+void bindInterface(QSslSocket &socket,const Endpoint &endpoint) {
+    const DWORD index=htonl(endpoint.index);
+    require(setsockopt(SOCKET(socket.socketDescriptor()),IPPROTO_IP,IP_UNICAST_IF,
+                       reinterpret_cast<const char*>(&index),sizeof(index))==0,QStringLiteral("USB 网卡已变化"));
+}
+#endif
 QString pinOf(const QSslCertificate &cert) {
     return QString::fromLatin1(QCryptographicHash::hash(cert.publicKey().toDer(),QCryptographicHash::Sha256).toHex());
 }
@@ -83,9 +97,7 @@ std::unique_ptr<QSslSocket> openChannel(const Endpoint &e,const QString &expecte
     conf.setPeerVerifyMode(QSslSocket::VerifyPeer);
     s->setSslConfiguration(conf);
     require(s->bind(e.local),QStringLiteral("无法绑定已核验的 USB 网卡"));
-    const DWORD index=htonl(e.index);
-    require(setsockopt(SOCKET(s->socketDescriptor()),IPPROTO_IP,IP_UNICAST_IF,
-                       reinterpret_cast<const char*>(&index),sizeof(index))==0,QStringLiteral("USB 网卡已变化"));
+    bindInterface(*s,e);
     s->setPeerVerifyName(e.serial+".cxwl.camera");
     s->connectToHostEncrypted(e.remote.toString(),8943);
     require(s->waitForEncrypted(4500),QStringLiteral("相机服务未就绪或凭据验证失败。请检查配套固件，旧固件可使用稳定版 SDK。 ")+s->errorString());
@@ -126,6 +138,7 @@ QJsonObject exchange(QSslSocket &s,const Endpoint &ep,const QByteArray &op,const
     require(doc["code"]=="ok",doc["code"].toString()+": "+doc["body"].toObject()["error"].toString());
     return doc;
 }
+#ifdef _WIN32
 QByteArray credential(const Identity &i,bool create) {
     const auto target=(QStringLiteral("CXWL Device Service/")+i.endpoint.serial+"/"+i.pin).toStdWString();
     PCREDENTIALW existing=nullptr;
@@ -144,6 +157,7 @@ QByteArray credential(const Identity &i,bool create) {
     auto out=QByteArray(reinterpret_cast<char*>(secret),sizeof(secret)).toHex();
     SecureZeroMemory(secret,sizeof(secret));return out;
 }
+#endif
 QJsonObject request(const Identity &i,const QByteArray &secret,const QByteArray &op,const QList<QByteArray> &args,int ms) {
     auto socket=openChannel(i.endpoint,i.pin);
     return exchange(*socket,i.endpoint,op,i.boot,secret,args,ms)["body"].toObject();
@@ -179,6 +193,7 @@ void download(const Identity &i,const QByteArray &secret,const QByteArray &op,co
 QByteArray sha(const QByteArray &data){return QCryptographicHash::hash(data,QCryptographicHash::Sha256).toHex();}
 } // namespace Transport
 using namespace Transport;
+#ifdef _WIN32
 QList<Endpoint> attached() {
     const auto parents=usbParents();
     ULONG size=16384;
@@ -199,15 +214,14 @@ QList<Endpoint> attached() {
         for(auto *u=a->FirstUnicastAddress;u;u=u->Next) {
             if(u->Address.lpSockaddr->sa_family!=AF_INET) continue;
             const auto host=ntohl(reinterpret_cast<sockaddr_in*>(u->Address.lpSockaddr)->sin_addr.s_addr);
-            QHostAddress local(host), remote;
-            if((host>>16)==0xa9fe) remote=QHostAddress("169.254.77.1");
-            else if((host>>16)==0xac20) remote=QHostAddress("172.32.0.93");
-            else continue;
-            result.append({parents[adapter],adapter,local,remote,a->IfIndex});break;
+            const auto remote=cameraAddress(host);
+            if(remote.isNull()) continue;
+            result.append({parents[adapter],adapter,QHostAddress(host),remote,a->IfIndex});break;
         }
     }
     return result;
 }
+#endif
 Identity inspect(const QString &selected) {
     auto choices=attached();
     if(!selected.isEmpty()) choices.erase(std::remove_if(choices.begin(),choices.end(),[&](auto &e){return e.serial!=selected;}),choices.end());

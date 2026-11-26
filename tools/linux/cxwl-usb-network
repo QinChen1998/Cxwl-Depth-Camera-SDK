@@ -1,0 +1,93 @@
+#!/bin/sh
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+usage() {
+    echo 'Usage: sh cxwl-usb-network {presence|check|configure} SERIAL [link-local|legacy]'
+    echo 'SERIAL is the 16 lowercase hexadecimal digits of the RV1103 USB attachment.'
+}
+
+fail() {
+    printf 'cxwl-usb-network: %s\n' "$2" >&2
+    exit "$1"
+}
+
+if [ "${1:-}" = --help ]; then usage; exit 0; fi
+action=${1:-}
+serial=${2:-}
+case "$action" in presence|check|configure) ;; *) usage >&2; exit 2 ;; esac
+[ "$#" -le 3 ] || { usage >&2; exit 2; }
+[ "${#serial}" -eq 16 ] || fail 2 'Expected a 16-digit USB serial.'
+case "$serial" in *[!0-9a-f]*) fail 2 'Expected a lowercase hexadecimal USB serial.' ;; esac
+
+case "${3:-link-local}" in
+    link-local) board=169.254.77.1; host=169.254.77.2/24 ;;
+    legacy) board=172.32.0.93; host=172.32.0.100/16 ;;
+    *) fail 2 'Choose the link-local or legacy RNDIS network.' ;;
+esac
+
+find_interface() {
+    match=
+    for entry in /sys/class/net/*; do
+        function=$(readlink -e "$entry/device") || continue
+        parent=${function%/*}
+        [ "$(cat "$parent/idVendor" 2>/dev/null)" = 2207 ] || continue
+        [ "$(cat "$parent/idProduct" 2>/dev/null)" = 0019 ] || continue
+        [ "$(cat "$parent/serial" 2>/dev/null)" = "$serial" ] || continue
+        [ -z "$match" ] || return 12
+        match=${entry##*/}
+    done
+    [ -n "$match" ] || return 11
+    printf '%s\n' "$match"
+}
+
+iface=$(find_interface) || fail "$?" 'Expected one USB network interface for the selected camera.'
+if [ "$action" = presence ]; then printf '%s\n' "$iface"; exit 0; fi
+
+index=$(cat "/sys/class/net/$iface/ifindex")
+still_attached() {
+    [ "$(find_interface)" = "$iface" ] && [ "$(cat "/sys/class/net/$iface/ifindex")" = "$index" ]
+}
+
+ready() {
+    route=$(ip -4 route get "$board" oif "$iface" 2>/dev/null) || return 1
+    source=$(printf '%s\n' "$route" | awk -v device="$iface" '
+        {for(i=1;i<NF;i++) {if($i=="dev")d=$(i+1); if($i=="src")s=$(i+1)}}
+        END{if(d==device)print s}')
+    case "$board:$source" in
+        169.254.77.1:169.254.*|172.32.0.93:172.32.*) [ "$board" != "$source" ] ;;
+        *) return 1 ;;
+    esac
+}
+
+if ready; then exit 0; fi
+[ "$action" = configure ] || fail 10 'Configure IPv4 on the selected USB interface first.'
+[ "$(id -u)" = 0 ] || fail 10 'Use sudo for the configure command.'
+if [ -n "$(ip -o -4 address show dev "$iface")" ]; then
+    fail 12 'An existing IPv4 configuration needs review before adding the camera address.'
+fi
+if ip -o -4 address show | awk -v addr="${host%/*}" '{split($4,a,"/"); if(a[1]==addr) found=1} END{exit !found}'; then
+    fail 12 'The proposed IPv4 address is already assigned.'
+fi
+
+added=0
+raised=0
+rollback() {
+    still_attached || return 0
+    if [ "$added" = 1 ]; then ip -4 address del "$host" dev "$iface" || :; fi
+    if [ "$raised" = 1 ]; then ip link set dev "$iface" down || :; fi
+}
+trap rollback EXIT
+trap 'exit 1' HUP INT TERM
+still_attached || fail 11 'The USB attachment changed.'
+flags=$(cat "/sys/class/net/$iface/flags")
+if [ $((flags & 1)) = 0 ]; then
+    ip link set dev "$iface" up
+    raised=1
+fi
+still_attached || fail 11 'The USB attachment changed.'
+ip -4 address add "$host" dev "$iface"
+added=1
+still_attached && ready || fail 12 'The IPv4 route did not match the selected USB interface.'
+trap - EXIT HUP INT TERM

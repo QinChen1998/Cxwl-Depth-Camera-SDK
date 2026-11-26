@@ -1,0 +1,9 @@
+prefix=${pcfiledir}/../..
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: CXWL Depth Camera SDK
+Description: C interface to the CXWL depth camera
+Version: @sdk_version@
+Libs: -L${libdir} -lCxwlDepthSdk
+Cflags: -I${includedir}

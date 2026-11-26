@@ -1,5 +1,5 @@
 #pragma once
-// Public development trust for the Windows service preview.
+// Public trust anchor for the device service preview.
 inline constexpr char cameraTrust[] = R"PEM(-----BEGIN CERTIFICATE-----
 MIIBajCCARCgAwIBAgIUCDKz1c2J/uSrIQhVThOWREAeIoQwCgYIKoZIzj0EAwIw
 ITEfMB0GA1UEAwwWQ1hXTCBQcmV2aWV3IERldmljZSBDQTAeFw0yNjExMjQwMjM3
