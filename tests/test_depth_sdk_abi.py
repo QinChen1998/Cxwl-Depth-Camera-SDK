@@ -94,7 +94,7 @@ def run(dll_path, work):
     before = registry.read_bytes()
     options = Options(c.sizeof(Options), 3, str(dll_path.parent).encode("utf-8"), str(registry).encode("utf-8"))
     session = handle()
-    assert abi() == 4, "Intentional CI ABI mismatch"
+    assert abi() == 3
     assert connect(0, None, None, None, c.byref(session)) == 1 and not session.value
     assert connect(1, None, None, None, None) == 1
     for preset in range(1, 7):
