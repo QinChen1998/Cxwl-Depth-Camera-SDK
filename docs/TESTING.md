@@ -26,7 +26,7 @@ python -B tools/validate_sdk_live_outputs.py --development-runtime --runtime x64
 
 ## Linux x86-64 与 ARM64
 
-按 [Linux 接入说明](DEPTH_SDK_LINUX.md) 为两架构分别构建并安装一份待验运行目录。`ctest` 检查 C++ 封装与 Linux 主机授权文件的重开、权限和符号链接拒绝。使用对应架构的 Ubuntu 22.04 用户空间运行以下命令。离线入口需要 Python 3、jsonschema、C/C++ 编译器、CMake、pkg-config 和 binutils。
+按 [Linux 接入说明](DEPTH_SDK_LINUX.md) 为两架构分别构建并安装一份待验运行目录。`ctest` 检查 C++ 封装与 Linux 主机授权文件的重开、权限和符号链接拒绝。使用对应架构的 Ubuntu 22.04 用户空间运行以下命令。离线入口需要 Python 3、支持 Draft 2020-12 的 jsonschema、C/C++ 编译器、CMake、pkg-config 和 binutils。CI 在独立 Python 环境中使用 jsonschema 4.26.0。
 
 ```bash
 ctest --test-dir "$build" --output-on-failure

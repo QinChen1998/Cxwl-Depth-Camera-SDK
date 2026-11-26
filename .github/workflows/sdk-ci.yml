@@ -109,9 +109,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential binutils libdbus-1-dev libfontconfig1-dev libglib2.0-dev \
             libpcre2-dev libpng-dev libssl-dev libxkbcommon-dev libzstd-dev \
-            nasm ninja-build patchelf pkg-config python3-jsonschema zlib1g-dev
+            nasm ninja-build patchelf pkg-config python3-venv zlib1g-dev
           uname -m
           cmake --version
+      - name: 安装 JSON Schema Draft 2020-12 验证器
+        shell: bash
+        run: |
+          /usr/bin/python3 -m venv "$RUNNER_TEMP/cxwl-ci-venv"
+          "$RUNNER_TEMP/cxwl-ci-venv/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: jsonschema==4.26.0
       - name: 恢复当前架构的 Qt 和 FFmpeg
         id: linux-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -139,10 +144,11 @@ jobs:
       - name: 暂存运行库并验证随包样例
         shell: bash
         run: |
-          /usr/bin/python3 -B tools/linux/stage.py --arch "$SDK_ARCH" \
+          python="$RUNNER_TEMP/cxwl-ci-venv/bin/python"
+          "$python" -B tools/linux/stage.py --arch "$SDK_ARCH" \
             --build "$RUNNER_TEMP/cxwl-sdk-build" --deps "$RUNNER_TEMP/cxwl-linux-deps" \
             --output "$RUNNER_TEMP/cxwl-sdk-stage" --examples-build "$RUNNER_TEMP/cxwl-examples-build"
-          /usr/bin/python3 -B tools/linux/validate_offline.py --arch "$SDK_ARCH" \
+          "$python" -B tools/linux/validate_offline.py --arch "$SDK_ARCH" \
             --stage "$RUNNER_TEMP/cxwl-sdk-stage" --output "$RUNNER_TEMP/cxwl-offline"
       - name: 上传 Linux 测试摘要和诊断日志
         if: ${{ !cancelled() }}
