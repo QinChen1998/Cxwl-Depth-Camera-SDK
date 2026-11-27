@@ -1,6 +1,12 @@
 @page sdk_usb USB 接入与相机登记
 
-使用配套预装设备服务的 CXWL Depth Camera，通过可传数据的 USB 线接入 Windows x64。打开设备管理器，在网络适配器中确认相机的 RNDIS 网卡已启用。使用稳定供电。在 Viewer 的设备管理窗口选择 USB 一键连接，或在 C 程序中调用 CxwlDepth_Connect。
+使用配套预装设备服务的 CXWL Depth Camera，通过可传数据的 USB 线接入上位机。相机固定使用 `172.32.0.93/16`，上位机的相机 USB 网卡使用同网段内另一个地址，例如 `172.32.0.100/16`。Windows 在设备管理器中确认 RNDIS 网卡已启用。网卡需要配置时，在 SDK 包根目录的管理员 PowerShell 中运行以下命令。
+
+```powershell
+.\Script\configure_cxwl_depth_camera_usb.ps1 -Serial (Read-Host '机身上的 16 位 USB 序号')
+```
+
+Linux 使用随包的 `sudo sh Script/cxwl-usb-network configure "$serial"`，其中 `serial` 为机身上的 16 位 USB 序号。网卡就绪后，在 Windows Viewer 的设备管理窗口选择 USB 一键连接，或在 C 程序中调用 `CxwlDepth_Connect`。
 
 ## 核对相机与登记
 
@@ -16,13 +22,13 @@ USB 直连 SDK 与 `1.0.0-preview.2-usb-direct` 完整镜像配套，`1.0.0-prev
 
 ## 两台相机同时接入 Windows
 
-两台相机可以保持连接，即使两台 USB 网卡上的相机地址相同。首次登记时，在当前 PowerShell 窗口用 `$env:CXWL_DEPTH_USB_SERIAL = Read-Host '目标相机的 16 位机身序号'` 指定实物，用 DeviceManagement 的 `scan` 核对目标，再运行 `connect-usb`。依次登记两台，记录每台双流就绪时输出的 SDK 设备 ID。登记结束后在该窗口运行 `Remove-Item Env:CXWL_DEPTH_USB_SERIAL`。
+两台相机可同时保持 USB 连接，每台仍使用 `172.32.0.93`。按各自的 USB 序号配置对应主机网卡，主机地址分别使用同网段内未占用的地址。首次登记时，在当前 PowerShell 窗口用 `$env:CXWL_DEPTH_USB_SERIAL = Read-Host '目标相机的 16 位机身序号'` 指定实物，用 DeviceManagement 的 `scan` 核对目标，再运行 `connect-usb`。依次登记两台，记录每台双流就绪时输出的 SDK 设备 ID。登记结束后在该窗口运行 `Remove-Item Env:CXWL_DEPTH_USB_SERIAL`。
 
 已登记设备可从 `CxwlDepth_ListSavedDevicesAlloc` 的 `id` 字段选取，每个采集进程将自己的 ID 传给 `CxwlDepthConnectOptions.device_id_utf8`，同时选择 `CXWL_DEPTH_TARGET_SAVED` 和 `CXWL_DEPTH_CONNECT_SAVED_ONLY`。单进程每次采集一台，同时采集两台需要两个进程，各自使用不同的 ID。包内设备管理示例的 `connect-saved ID` 演示了这一流程。
 
 ## 检查连接
 
-1. 确认 USB 网卡启用并取得 IPv4 地址。
+1. 确认相机 USB 网卡已启用，并配置了可访问 `172.32.0.93` 的同网段 IPv4 地址。
 2. 确认该网卡允许连接相机的 TCP 8943。在设备管理中再次扫描。
 3. 出现固件不匹配提示时，核对 SDK 与相机服务的配套版本。
 4. 若报告设备实例变化，核对机身序号及刷机记录，通过 USB 连接完成重新登记。

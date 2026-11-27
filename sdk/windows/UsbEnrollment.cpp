@@ -118,7 +118,7 @@ QJsonObject checkRvUsbEnrollmentCore() {
     b.instance="b";checks["USB_INSTANCE_CHANGE_REJECTED"]=!sameAttachment(a,b);
     b=a;b.boot="next";checks["USB_BOOT_CHANGE_REJECTED"]=!sameAttachment(a,b);
     b=a;b.endpoint.adapter="other";checks["USB_INTERFACE_CHANGE_REJECTED"]=!sameAttachment(a,b);
-    a.instance=QString(32,'a');a.endpoint.remote=QHostAddress("169.254.77.1");
+    a.instance=QString(32,'a');a.endpoint.remote=QHostAddress("172.32.0.93");
     RvDeviceProfile old;
     old.id="previous-record";old.name="Saved camera name";old.serial=a.endpoint.serial;
     old.host="172.32.0.93";old.cameraMountRotation=180;

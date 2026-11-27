@@ -16,7 +16,7 @@ C/C++ 共用一个 DLL、导入库和 ABI v3。C++ 可使用 DepthSdk.hpp 的辅
 
 桌面示例在等待采集就绪时显示「正在启动采集」和不定进度条，深度与视频都就绪后显示画面。点击停止会先显示「正在停止」，SDK 返回 `CXWL_DEPTH_OK` 后显示「已停止采集」。
 
-设备连接信息由 SDK 在当前 Windows 用户目录下管理。安装版上位机与 SDK 共用该用户的登记记录和 Windows 凭据管理器。首次 USB 接入需要 Windows 识别相机的 RNDIS 网卡。配置 USB 网络时 Windows 可能显示系统管理员授权提示。
+设备连接信息由 SDK 在当前 Windows 用户目录下管理。安装版上位机与 SDK 共用该用户的登记记录和 Windows 凭据管理器。首次 USB 接入需要 Windows 识别相机的 RNDIS 网卡。相机固定使用 `172.32.0.93/16`。初次配置网卡时，在 SDK 包根目录的管理员 PowerShell 中运行 `./Script/configure_cxwl_depth_camera_usb.ps1 -Serial (Read-Host '机身上的 16 位 USB 序号')`，为指定相机的主机 USB 网卡配置同网段地址。已有有效地址时直接连接。
 
 两台相机可以同时插在 Windows 上。首次登记按机身序号核对目标，之后使用设备管理示例的 `connect-saved ID` 连接指定相机。两个进程各传一个不同的登记 ID 可并行采集。 [双机登记与按 ID 选机](sdk/usb.md)
 

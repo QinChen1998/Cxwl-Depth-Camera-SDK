@@ -13,7 +13,7 @@ sh Script/cxwl-usb-network check "$serial"
 sudo sh Script/cxwl-usb-network configure "$serial"
 ```
 
-`read` 后输入机身序列号的 16 位小写十六进制字符。默认配置相机地址 `169.254.77.1`。原有 RNDIS 网络使用 `172.32.0.93` 时，给 `check` 与 `configure` 追加 `legacy`。`configure` 为指定 USB 接口添加主机 IPv4 地址，已有地址冲突时先检查配置。只有配置网卡需要管理员权限。采集应用以普通用户运行。
+`read` 后输入机身序列号的 16 位小写十六进制字符。相机固定使用 `172.32.0.93/16`。`configure` 为指定相机的 USB 网卡配置同网段内未占用的主机地址，已有有效地址时沿用。USB 网卡重新枚举后，可用 `check` 核对地址并按需重新配置。只有配置网卡需要管理员权限。采集应用以普通用户运行。
 
 ```bash
 Example/bin/CxwlDepthDeviceManagement scan

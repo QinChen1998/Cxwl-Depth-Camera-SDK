@@ -34,9 +34,10 @@ void require(bool valid,const QString &why) {
     if(!valid) throw std::runtime_error(why.toUtf8().constData());
 }
 QHostAddress cameraAddress(quint32 local) {
-    if((local>>16)==0xa9fe) return QHostAddress("169.254.77.1");
-    if((local>>16)==0xac20) return QHostAddress("172.32.0.93");
-    return {};
+    constexpr quint32 cameraIpv4 = 0xac20005d; // 172.32.0.93
+    constexpr quint32 netmask = 0xffff0000;
+    if (local == cameraIpv4 || (local & netmask) != (cameraIpv4 & netmask)) return {};
+    return QHostAddress(cameraIpv4);
 }
 #ifdef _WIN32
 QMap<QString,QString> usbParents() {
@@ -286,7 +287,7 @@ QList<Endpoint> attached() {
 Identity inspect(const QString &selected) {
     auto choices=attached();
     if(!selected.isEmpty()) choices.erase(std::remove_if(choices.begin(),choices.end(),[&](auto &e){return e.serial!=selected;}),choices.end());
-    require(choices.size()==1,choices.isEmpty()?QStringLiteral("没有找到目标 USB 相机。请检查数据线和 RNDIS 网卡，等待其取得 IPv4 地址。")
+    require(choices.size()==1,choices.isEmpty()?QStringLiteral("没有找到目标 USB 相机。请检查数据线，并为相机 RNDIS 网卡配置 172.32 网段的主机地址。")
         :QStringLiteral("检测到多台相机，请指定已登记设备或单独接入待登记相机。"));
     const auto e=choices.first();auto channel=openChannel(e);
     const auto result=exchange(channel,"HELLO",{},{});

@@ -44,7 +44,7 @@ QList<Endpoint> attached()
         for (const auto &address : interface.addressEntries()) {
             if (address.ip().protocol() != QAbstractSocket::IPv4Protocol) continue;
             const auto remote = Transport::cameraAddress(address.ip().toIPv4Address());
-            if (remote.isNull() || remote == address.ip()) continue;
+            if (remote.isNull()) continue;
             result.append({serial, interface.name(), address.ip(), remote, quint32(interface.index())});
             break;
         }

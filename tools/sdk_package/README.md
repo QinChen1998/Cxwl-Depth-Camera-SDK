@@ -36,7 +36,7 @@ Get-ChildItem -LiteralPath $out
 
 1. **USB 枚举。** 用数据线直连相机并确认供电。在 Windows 设备管理器的「网络适配器」中观察插拔时是否出现相机的 RNDIS 网卡。若无变化，先换一根已确认可传数据的线或换 USB 口。
 2. **设备服务。** 在 Viewer 中扫描并核对机身序号。服务版本不兼容时使用与出厂固件配套的 SDK。
-3. **RNDIS。** 在设备管理器的「网络适配器」中确认相机的 USB 网卡已枚举且无黄色感叹号。网卡就绪后在 Viewer 中打开「设备管理 → USB 一键连接」。仍失败时保存诊断。 [USB 接入细节](Doc/api/Chinese/sdk_usb.html)
+3. **RNDIS。** 在设备管理器的「网络适配器」中确认相机的 USB 网卡已枚举。相机固定使用 `172.32.0.93/16`。初次配置网卡时，在包根目录的管理员 PowerShell 中运行 `./Script/configure_cxwl_depth_camera_usb.ps1 -Serial (Read-Host '机身上的 16 位 USB 序号')`。网卡就绪后在 Viewer 中打开「设备管理 → USB 一键连接」。 [USB 接入细节](Doc/api/Chinese/sdk_usb.html)
 
 在包根目录运行 `powershell -File Script/diagnose_cxwl_depth_camera_usb.ps1 -OutputDirectory ([IO.Path]::GetTempPath())` 可采集主机诊断。Viewer 状态栏的「复制诊断」可复制版本、设备 ID、状态和最近一次采集错误。
 
@@ -71,7 +71,7 @@ powershell -File Script/build-examples.ps1 -BuildDirectory ../cxwl-build -RunOff
 | 部署档位 | 内容与用途 |
 |---|---|
 | MINIMAL | SDK、Qt Core/Gui/Network、MSVC 基础运行库及许可；用于查询与保存 XYZ 副本。 |
-| STANDARD | 默认采集部署，包含 MINIMAL、媒体解码及 USB 安全通信。 |
+| STANDARD | 默认采集部署，包含 MINIMAL、媒体解码及 USB 直连通信。 |
 | FULL | STANDARD + Qt Widgets/Svg、窗口插件与资源，供 Viewer 使用。 |
 
 `cxwl_deploy_runtime(app PROFILE MINIMAL)` 可用于查询工具，采集程序选择 STANDARD。运行依赖包含 Qt，C/C++ 调用方无需 Qt 头文件或链接库。运行 `python Script/generate_runtime_components.py --check` 可复核 JSON 和 CMake 的三档清单。 [安装、重定位、vcpkg／Conan](Integration/README.md)

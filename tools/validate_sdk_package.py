@@ -44,6 +44,8 @@ def verify(root):
     assert (root/'Doc/api/Chinese/API_REFERENCE.pdf').is_file()
     assert (root/'Doc/api/Chinese/点云录制数据读取说明.pdf').read_bytes().startswith(b'%PDF-')
     assert (root/'Script/build-examples.ps1').is_file()
+    if manifest.get('usb_camera_ipv4'):
+        assert (root/'Script/configure_cxwl_depth_camera_usb.ps1').is_file()
     viewer_main=(root/'Example/QtViewer/main.cpp').read_text(encoding='utf-8')
     for internal in ('DCTS_', 'CXWL_DESKTOP_VALIDATION', 'RvDeviceStore.h', 'Cxwl Depth Camera', '触想工作台', 'DepthCameraAndTactileSensor'):
         assert internal not in viewer_main, internal
