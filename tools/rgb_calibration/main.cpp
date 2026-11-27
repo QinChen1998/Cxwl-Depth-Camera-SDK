@@ -23,7 +23,7 @@ QJsonObject run(const QString &path, const QString &serial, bool write) {
     try {
         const auto profiles = RvDeviceStore(path).profiles();
         for (const auto &profile : profiles) {
-            if (profile.serial != serial || profile.servicePin.isEmpty()) continue;
+            if (profile.serial != serial || profile.serviceInstance.isEmpty()) continue;
             auto result = rgbCalibration(profile, write).value("rgb_lsc").toObject();
             if (result["state"].toString().isEmpty()) throw std::runtime_error("设备校正状态回执缺失");
             return result;

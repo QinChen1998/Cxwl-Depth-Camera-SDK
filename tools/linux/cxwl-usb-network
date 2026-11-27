@@ -4,7 +4,7 @@ PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export PATH
 
 usage() {
-    echo 'Usage: sh cxwl-usb-network {presence|check|configure} SERIAL [link-local|legacy]'
+    echo 'Usage: sh cxwl-usb-network {presence|check|configure} SERIAL'
     echo 'SERIAL is the 16 lowercase hexadecimal digits of the RV1103 USB attachment.'
 }
 
@@ -21,11 +21,9 @@ case "$action" in presence|check|configure) ;; *) usage >&2; exit 2 ;; esac
 [ "${#serial}" -eq 16 ] || fail 2 'Expected a 16-digit USB serial.'
 case "$serial" in *[!0-9a-f]*) fail 2 'Expected a lowercase hexadecimal USB serial.' ;; esac
 
-case "${3:-link-local}" in
-    link-local) board=169.254.77.1; host=169.254.77.2/24 ;;
-    legacy) board=172.32.0.93; host=172.32.0.100/16 ;;
-    *) fail 2 'Choose the link-local or legacy RNDIS network.' ;;
-esac
+# The optional legacy argument selects the original camera address as well.
+[ "${3:-legacy}" = legacy ] || fail 2 'The camera IPv4 address is 172.32.0.93.'
+board=172.32.0.93
 
 find_interface() {
     match=
@@ -55,8 +53,8 @@ ready() {
     source=$(printf '%s\n' "$route" | awk -v device="$iface" '
         {for(i=1;i<NF;i++) {if($i=="dev")d=$(i+1); if($i=="src")s=$(i+1)}}
         END{if(d==device)print s}')
-    case "$board:$source" in
-        169.254.77.1:169.254.*|172.32.0.93:172.32.*) [ "$board" != "$source" ] ;;
+    case "$source" in
+        172.32.*) [ "$board" != "$source" ] ;;
         *) return 1 ;;
     esac
 }
@@ -64,12 +62,14 @@ ready() {
 if ready; then exit 0; fi
 [ "$action" = configure ] || fail 10 'Configure IPv4 on the selected USB interface first.'
 [ "$(id -u)" = 0 ] || fail 10 'Use sudo for the configure command.'
-if [ -n "$(ip -o -4 address show dev "$iface")" ]; then
-    fail 12 'An existing IPv4 configuration needs review before adding the camera address.'
-fi
-if ip -o -4 address show | awk -v addr="${host%/*}" '{split($4,a,"/"); if(a[1]==addr) found=1} END{exit !found}'; then
-    fail 12 'The proposed IPv4 address is already assigned.'
-fi
+exec 9>/run/cxwl-usb-network.lock
+flock 9
+still_attached || fail 11 'The USB attachment changed.'
+if ready; then exit 0; fi
+
+host=$(ip -o -4 address show | awk '{split($4,a,"/"); used[a[1]]=1}
+    END {for (i=100;i<=199;i++) {address="172.32.0."i; if (!used[address]) {print address"/16"; exit}}}')
+[ -n "$host" ] || fail 12 'No unassigned host address in 172.32.0.100–172.32.0.199.'
 
 added=0
 raised=0

@@ -41,11 +41,17 @@ radial_mm = [value for (value,) in struct.iter_unpack(">H", pixels) if value]
 ply = (output / "pointcloud/cloud.ply").read_text(encoding="ascii")
 header, body = ply.split("end_header\n", 1)
 points = [tuple(map(float, line.split())) for line in body.splitlines()]
-assert f"element vertex {len(points)}\n" in header and len(points) == len(radial_mm) > 0
-error = max(abs(math.sqrt(sum(v * v for v in point)) - mm / 1000) for point, mm in zip(points, radial_mm))
+cloud_ranges = [math.hypot(*point) for point in points]
+assert all(math.isfinite(distance) and distance > 0 for distance in cloud_ranges)
+# Recover the native quarter-millimetre count before testing the PGM zero bin.
+# The norm of a float32 XYZ point at exactly 0.5 mm can fall on either side of it.
+pgm_ranges = [distance for distance in cloud_ranges if round(distance * 4000) >= 2]
+assert f"element vertex {len(points)}\n" in header and len(pgm_ranges) == len(radial_mm) > 0
+error = max(abs(distance - mm / 1000) for distance, mm in zip(pgm_ranges, radial_mm))
 assert error < 0.00051
 assert "Owned depth 48x32, 1536 points" in (output / "cpp.log").read_text(encoding="utf-8")
-result = {"passed": True, "pointcloud_valid_points": len(points), "cpp_points": 1536, "max_radial_error_m": error}
+result = {"passed": True, "pointcloud_valid_points": len(points), "pgm_nonzero_points": len(radial_mm),
+          "pgm_rounded_to_zero_points": len(points) - len(pgm_ranges), "cpp_points": 1536, "max_radial_error_m": error}
 (output / "samples.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(result))
 PY

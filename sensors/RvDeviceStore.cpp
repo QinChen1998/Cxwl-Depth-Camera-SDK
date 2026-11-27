@@ -39,8 +39,8 @@ void validateList(const QVector<RvDeviceProfile> &profiles) {
     QSet<QString> ids, keys, serials;
     for(const auto &p:profiles) {
         p.validate();
-        require(!ids.contains(p.id)&&!keys.contains(p.publicKey)&&!serials.contains(p.serial), "Duplicate device ID, public key or serial; edit the existing device explicitly");
-        ids.insert(p.id);keys.insert(p.publicKey);serials.insert(p.serial);
+        require(!ids.contains(p.id)&&!keys.contains(p.identity())&&!serials.contains(p.serial), "Duplicate device ID, identity or serial; edit the existing device explicitly");
+        ids.insert(p.id);keys.insert(p.identity());serials.insert(p.serial);
     }
 }
 QJsonObject payload(const QVector<RvDeviceProfile> &profiles,const QString &active) {
@@ -53,18 +53,20 @@ QJsonObject RvDeviceProfile::json() const {
         {"public_key",publicKey},{"username",username},{"calibration",calibration},
         {"camera_mount_rotation",cameraMountRotation},{"legacy_coordinator",legacyCoordinator},{"last_connected",lastConnected}};
     if(!servicePin.isEmpty())result["service_pin"]=servicePin;
+    if(!serviceInstance.isEmpty())result["service_instance"]=serviceInstance;
     if(temporaryFovCalibration)result["temporary_fov_calibration"]=true;
     return result;
 }
 RvDeviceProfile RvDeviceProfile::fromJson(const QJsonObject &o) {
     QStringList fields={"id","name","host","ssh_port","serial","public_key","username","calibration","legacy_coordinator","last_connected"};
     const bool hasPin=o.contains("service_pin");
+    const bool hasInstance=o.contains("service_instance");
     const bool hasMount=o.contains("camera_mount_rotation");
     const bool hasTemporary=o.contains("temporary_fov_calibration");
     const bool hasLegacyRotation = o.contains("input_rotation");
-    require(o.size()==fields.size()+int(hasPin)+int(hasMount)+int(hasTemporary)+int(hasLegacyRotation), "Incomplete device profile");
     for(const auto &key:fields)require(o.contains(key), "Incomplete device profile");
     if(hasPin)fields.append("service_pin");
+    if(hasInstance)fields.append("service_instance");
     if(hasMount)fields.append("camera_mount_rotation");
     if(hasTemporary)fields.append("temporary_fov_calibration");
     if(hasLegacyRotation)fields.append("input_rotation");
@@ -79,6 +81,7 @@ RvDeviceProfile RvDeviceProfile::fromJson(const QJsonObject &o) {
     require(!hasTemporary||o["temporary_fov_calibration"].isBool(),"Temporary FOV calibration must be boolean");
     p.temporaryFovCalibration=o["temporary_fov_calibration"].toBool();
     if(hasPin){p.servicePin=o["service_pin"].toString();require(QRegularExpression("^[0-9a-f]{64}$").match(p.servicePin).hasMatch(),"Invalid device certificate pin");}
+    if(hasInstance){p.serviceInstance=o["service_instance"].toString();require(!p.serviceInstance.isEmpty(),"Missing USB service instance");}
     p.serial=o["serial"].toString();p.publicKey=o["public_key"].toString();p.username=o["username"].toString();p.calibration=o["calibration"].toString();
     p.cameraMountRotation=hasMount?o["camera_mount_rotation"].toInt(-1):
         (p.serial=="REDACTED_DEVICE_SERIAL"&&p.publicKey==""?180:0);
@@ -92,14 +95,21 @@ void RvDeviceProfile::validate() const {
     require(RvDeviceStore::validHost(host)&&sshPort>0&&sshPort<=65535, "Invalid device address or SSH port");
     require(QRegularExpression("^[0-9a-f]{16}$").match(serial).hasMatch(), "RV serial must be 16 lowercase hexadecimal characters");
     require(QRegularExpression("^[A-Za-z0-9_.-]{1,64}$").match(username).hasMatch(), "Invalid login username");
-    RvDeviceStore::keyFingerprint(publicKey);
+    if(serviceInstance.isEmpty()) RvDeviceStore::keyFingerprint(publicKey);
+    else require(servicePin.isEmpty() && publicKey.isEmpty() && QRegularExpression("^[0-9a-f]{32}$").match(serviceInstance).hasMatch(),
+                 "Invalid USB service instance");
     require(calibration==QLatin1String(RvCalibration::Id)||calibration=="unconfigured"||calibration=="rv20261008-f1"||calibration=="rv20261008-f2", "Unsupported calibration profile");
     require(!temporaryFovCalibration||fov()>0,"Select F1/F2 before enabling temporary calibration");
     require(cameraMountRotation==0||cameraMountRotation==180, "Camera mounting angle must be 0 or 180 degrees");
     require(lastConnected.isEmpty()||(lastConnected.size()<=32&&QDateTime::fromString(lastConnected,Qt::ISODate).isValid()), "Invalid last connection time");
 }
 QString RvDeviceProfile::defaultName() const { return QStringLiteral("CXWL Depth Camera - ") + serial; }
-QString RvDeviceProfile::fingerprint() const { return RvDeviceStore::keyFingerprint(publicKey); }
+QString RvDeviceProfile::identity() const { return serviceInstance.isEmpty() ? publicKey : QStringLiteral("usb-v2:") + serviceInstance; }
+QString RvDeviceProfile::fingerprint() const {
+    if(serviceInstance.isEmpty()) return RvDeviceStore::keyFingerprint(publicKey);
+    const auto hash=QCryptographicHash::hash(identity().toLatin1(),QCryptographicHash::Sha256);
+    return "SHA256:"+QString::fromLatin1(hash.toBase64(QByteArray::OmitTrailingEquals));
+}
 QString RvDeviceProfile::credentialTarget() const { return "CXWL Depth Camera/"+serial+"/"+fingerprint().mid(7)+"/"+username; }
 int RvDeviceProfile::fov() const { return calibration==QLatin1String(RvCalibration::Id)?RvCalibration::Fov:calibration=="rv20261008-f1"?1:calibration=="rv20261008-f2"?2:0; }
 QString RvDeviceProfile::geometrySha() const { return fov()==RvCalibration::Fov?QLatin1String(RvCalibration::GeometrySha):fov()==1?"83b49ace957a4f70982380c6f22a7c39236764ff7311232d03724e85273324db":fov()==2?"54802b37740d0075d8a9da95a0dcb5fde27b2f1e20249312a9f2325280c51729":QString(); }
@@ -136,8 +146,8 @@ QVector<RvDeviceProfile> RvDeviceStore::mergeProfiles(const QVector<RvDeviceProf
     for(const auto &p:incoming) {
         bool same=false;
         for(const auto &current:existing) {
-            if(current.serial==p.serial&&current.publicKey==p.publicKey)same=true;
-            else require(current.id!=p.id&&current.serial!=p.serial&&current.publicKey!=p.publicKey,"Import conflicts with a saved device identity; rebind it explicitly");
+            if(current.serial==p.serial&&current.identity()==p.identity())same=true;
+            else require(current.id!=p.id&&current.serial!=p.serial&&current.identity()!=p.identity(),"Import conflicts with a saved device identity; rebind it explicitly");
         }
         if(!same)result.append(p); // Keep local aliases, endpoints and settings for an already trusted identity.
     }

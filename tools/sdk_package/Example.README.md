@@ -9,7 +9,7 @@ New-Item -ItemType Directory -Path $out | Out-Null
 ./Example/bin/CxwlDepthSelfTest.exe -v -Report (Join-Path $out 'self-test.json')
 ```
 
-接上预装设备服务 1.0.0-preview.1 的相机后，先运行 QuickStart 确认深度和视频均到达，再运行 `./Example/bin/CxwlDepthPointCloud.exe -Out $out` 保存同帧 XYZ 和深度图。C 使用 `CxwlDepth_Connect`，C++17 使用 `cxwl::Session`，两者加载相同的 Windows DLL。维护、修复或恢复前先释放目标相机的采集会话。
+接上一台预装 `1.0.0-preview.3-usb-direct` 设备服务的相机，并配置相机对应的主机 RNDIS 网卡。示例通过 SDK 的 CX2 连接访问 `172.32.0.93:8943`。先运行 QuickStart 确认深度和视频均到达，再运行 `./Example/bin/CxwlDepthPointCloud.exe -Out $out` 保存同帧 XYZ 和深度图。C 使用 `CxwlDepth_Connect`，C++17 使用 `cxwl::Session`，两者加载同一个 Windows DLL。维护、修复或恢复前先释放采集会话。 [USB 网卡配置](../Doc/api/Chinese/sdk_usb.html)
 
 | 程序 | 参数 | 预期输出 |
 |---|---|---|
@@ -24,7 +24,7 @@ New-Item -ItemType Directory -Path $out | Out-Null
 
 ## 在两台相机中选择目标
 
-两台都可以保持接线。首次登记时，在包根目录运行下面的命令，按提示输入要登记的那台机身上的 16 位 USB 序号。核对扫描结果后再执行连接。按同样步骤登记另一台。
+以下是可选的双机选机示例。首次登记时，在包根目录运行下面的命令，按提示输入目标相机的 16 位 USB 序号。核对扫描结果后再执行连接。按同样步骤登记另一台。
 
 ```powershell
 $manager = './Example/bin/CxwlDepthDeviceManagement.exe'

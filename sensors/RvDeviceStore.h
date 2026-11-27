@@ -9,7 +9,7 @@
 // A session takes a value snapshot; editing the store cannot change an in-flight command.
 struct CXWL_DEPTH_INTERNAL RvDeviceProfile {
     QString id, name, host, serial, publicKey, username = QStringLiteral("root");
-    QString servicePin;
+    QString servicePin, serviceInstance;
     QString calibration=QLatin1String(RvCalibration::Id), lastConnected;
     int sshPort = 22, cameraMountRotation = 0;
     bool legacyCoordinator = true;
@@ -18,6 +18,7 @@ struct CXWL_DEPTH_INTERNAL RvDeviceProfile {
     static RvDeviceProfile fromJson(const QJsonObject &object);
     void validate() const;
     QString defaultName() const;
+    QString identity() const;
     QString fingerprint() const;
     QString credentialTarget() const;
     int fov() const;

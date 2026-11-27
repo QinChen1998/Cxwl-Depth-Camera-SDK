@@ -94,7 +94,7 @@ C++ 可用 cxwl::state、cxwl::devices、cxwl::manager_state 获取 std::string�
 | `device_id` | string | 否 | 会话级 USB 状态中的内部登记 ID。 |
 | `runtime_replaced` | boolean | 否 | 是否替换运行文件。 |
 | `attachment_id` | string | 否 | 接入指纹，不透明值。 |
-| `host_authorization_id` | string | 否 | 当前 Windows 用户对这台相机的主机授权标识。登记成功后可将此标识交给设备管理员，用于单独授予维护或标定权限。 |
+| `host_authorization_id` | string | 否 | 当前系统用户对这台相机的主机授权标识。登记成功后可将此标识交给设备管理员，用于单独授予维护或标定权限。 |
 | `known` | boolean | 否 | 发现时是否已登记。 |
 | `absent` | boolean | 否 | 是否未发现 USB。 |
 

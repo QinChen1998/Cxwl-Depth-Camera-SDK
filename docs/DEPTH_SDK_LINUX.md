@@ -1,10 +1,10 @@
 # Linux 深度相机 SDK 3.0.0
 
-适用于 Ubuntu 22.04 x86-64 和小端 ARM64，公开 C ABI v3 和 C++17 封装。应用从 ABI v1 或 v2 迁移时，按 `SDK/include/DepthSdk.h` 重新编译。RV1103 相机须已安装设备服务 `1.0.0-preview.1`，本机须有 RNDIS 驱动和系统 OpenSSL 3（Ubuntu 的 `libssl3`）。
+适用于 Ubuntu 22.04 x86-64 和小端 ARM64，公开 C ABI v3 和 C++17 封装。应用从 ABI v1 或 v2 迁移时，按 `SDK/include/DepthSdk.h` 重新编译。RV1103 相机使用随完整镜像预装的 `1.0.0-preview.3-usb-direct` 服务。本机须有 RNDIS 驱动，主机请求签名使用系统 OpenSSL 3（Ubuntu 的 `libssl3`）。
 
 ## 接入相机
 
-使用 USB 数据线连接相机，确认 Linux 枚举出了它的 USB 网卡。使用机身序列号核对该接口。连接使用 TLS，需要核验相机证书和已登记公钥。
+使用 USB 数据线连接一台相机，确认 Linux 枚举出了它的 USB 网卡。使用机身序列号核对该接口。SDK 将 CX2 TCP 8943 连接绑定到该 USB 网卡，并核对相机回执中的序列号和设备实例标识。 [安全边界与档案迁移](sdk/usb.md)
 
 ```bash
 read -r serial
@@ -13,7 +13,7 @@ sh Script/cxwl-usb-network check "$serial"
 sudo sh Script/cxwl-usb-network configure "$serial"
 ```
 
-`read` 后输入机身序列号的 16 位小写十六进制字符。默认配置相机地址 `169.254.77.1`。原有 RNDIS 网络使用 `172.32.0.93` 时，给 `check` 与 `configure` 追加 `legacy`。`configure` 为指定 USB 接口添加主机 IPv4 地址，已有地址冲突时先检查配置。只有配置网卡需要管理员权限。采集应用以普通用户运行。
+`read` 后输入机身序列号的 16 位小写十六进制字符。相机固定使用 `172.32.0.93/16`。`configure` 为指定相机的 USB 网卡配置同网段内未占用的主机地址，已有有效地址时沿用。USB 网卡重新枚举后，可用 `check` 核对地址并按需重新配置。只有配置网卡需要管理员权限。采集应用以普通用户运行。
 
 ```bash
 Example/bin/CxwlDepthDeviceManagement scan
@@ -25,7 +25,7 @@ Linux 设备档案与本机主机授权位于 `${XDG_DATA_HOME:-$HOME/.local/sha
 
 ## 构建客户应用与样例
 
-解压后保留 `SDK/lib` 内的 SONAME 符号链接、`cxwl` 和 `tls` 目录。保持 `SDK/include`、`SDK/lib/cmake` 和 `SDK/lib/pkgconfig` 的相对布局。Qt 与 FFmpeg 来自包内共享库，TLS 使用系统 OpenSSL。所需的 C/C++ 接口只包括 SDK 自带头文件。
+解压后保留 `SDK/lib` 内的 SONAME 符号链接、`cxwl` 和 `tls` 目录。保持 `SDK/include`、`SDK/lib/cmake` 和 `SDK/lib/pkgconfig` 的相对布局。Qt 与 FFmpeg 来自包内共享库，主机请求签名使用系统 `libcrypto.so.3`。应用只需包含 SDK 自带接口头文件。
 
 ```bash
 cmake -S Example -B ../cxwl-linux-examples -DCMAKE_BUILD_TYPE=Release
@@ -55,7 +55,7 @@ cc -std=c11 client.c $(pkg-config --cflags --libs cxwl-depth-sdk) \
 
 ## 从源码构建 SDK
 
-准备 Qt 6.11.1（Core、Gui、Network、Concurrent 和 OpenSSL TLS 插件）、FFmpeg 7.1.3 LGPL 运行库、CMake 3.22、Ninja、C/C++ 编译器和 patchelf。Linux 依赖目录包含 `qt-6.11.1` 和 `ffmpeg-7.1.3` 两个安装前缀。以下命令从源码根目录发起。
+准备 Qt 6.11.1（Core、Gui、Network、Concurrent 和 OpenSSL TLS 插件）、OpenSSL 3 开发库（Ubuntu 的 `libssl-dev`）、FFmpeg 7.1.3 LGPL 运行库、CMake 3.22、Ninja、C/C++ 编译器和 patchelf。Linux 依赖目录包含 `qt-6.11.1` 和 `ffmpeg-7.1.3` 两个安装前缀。以下命令从源码根目录发起。
 
 ```bash
 cmake -S . -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release \

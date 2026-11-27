@@ -51,9 +51,10 @@ class CXWL_DEPTH_INTERNAL RvDtofBoardStream final:public QObject {
     QTcpSocket socket;QTimer poll,timeout;QElapsedTimer roundtrip,progress;QByteArray buffer;
     const QJsonObject expected;Identities identities;quint32 request=0;
     bool pending=false,decoding=false,failed=false;
+    bool requestNewest=false;
     std::shared_ptr<Decoder> decoder;QFutureWatcher<Decoded> watcher;QThreadPool *decodePool;
     void fail(const QString&);void ask();void read();void finish();
-    static Decoded decode(const std::shared_ptr<Decoder>&,const QByteArray&,const QJsonObject&,Identities,quint32);
+    static Decoded decode(const std::shared_ptr<Decoder>&,const QByteArray&,const QJsonObject&,Identities,quint32,bool);
 public:
     std::function<void(const RvTofFrame&)> rawFrame;
     std::function<void(const QJsonObject&)> videoProgress;

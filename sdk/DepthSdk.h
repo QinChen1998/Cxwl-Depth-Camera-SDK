@@ -669,7 +669,7 @@ CXWL_DEPTH_API CxwlDepthResult CXWL_DEPTH_CALL CxwlDepth_Reconnect(CxwlDepthSess
 CXWL_DEPTH_API CxwlDepthResult CXWL_DEPTH_CALL CxwlDepth_RecoverDevice(
     CxwlDepthDeviceManager *manager, const char *device_id_utf8);
 /**
- * @brief 停止且空闲时只读检查 USB 接入。Windows 版核验物理网卡、相机序号及设备证书。
+ * @brief 停止且空闲时只读检查 USB 接入，核对物理 USB 网卡、相机序号及设备实例标识。
  * @param[in] session 有效采集句柄，必须在创建它的线程使用。
  * @return OK 已受理；INVALID_ARGUMENT 句柄或参数无效；BUSY 尚未空闲或仍在回调；WRONG_THREAD 非所有者线程；UNAVAILABLE 内部操作失败。
  * @see @ref sdk_lifecycle

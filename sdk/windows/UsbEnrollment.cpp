@@ -17,7 +17,7 @@ struct Result {
 };
 bool sameAttachment(const DeviceService::Identity &a,const DeviceService::Identity &b) {
     return a.endpoint.serial==b.endpoint.serial && a.endpoint.adapter==b.endpoint.adapter
-        && a.endpoint.index==b.endpoint.index && a.pin==b.pin && a.boot==b.boot;
+        && a.endpoint.index==b.endpoint.index && a.instance==b.instance && a.boot==b.boot;
 }
 }
 class RvUsbEnrollment final:public QObject {
@@ -56,7 +56,7 @@ public:
                 auto p=DeviceService::profile(checked,current.profiles());
                 auto list=current.profiles();
                 auto existing=std::find_if(list.begin(),list.end(),[&](auto &e){return e.id==p.id;});
-                known=existing!=list.end() && !existing->servicePin.isEmpty();
+                known=existing!=list.end() && existing->serviceInstance==checked.instance;
                 if(checkOnly) {
                     id=++next;checkedStop=stop;revision=snapshot;
                     state=known?"ready":"registration_required";deviceId=known?p.id:QString();
@@ -79,9 +79,9 @@ public:
                 r.identity=DeviceService::inspect(selected);
                 if(confirmed && !sameAttachment(previous,r.identity))throw std::runtime_error("检查后相机已更换或重启，请重新确认");
                 auto p=DeviceService::profile(r.identity,saved);
-                const bool existing=std::any_of(saved.begin(),saved.end(),[&](auto &d){return d.serial==p.serial;});
+                const auto existing=std::find_if(saved.begin(),saved.end(),[&](auto &d){return d.serial==p.serial;});
                 if(!checkOnly) {
-                    if(!existing && !saved.isEmpty() && !confirmed)throw std::runtime_error("检测到新相机，请在设备管理中核对并确认登记");
+                    if(existing==saved.end() && !saved.isEmpty() && !confirmed)throw std::runtime_error("检测到新相机，请在设备管理中核对并确认登记");
                     DeviceService::enroll(r.identity);
                     r.hostId=DeviceService::hostAuthorizationId(r.identity);
                     try {r.needsRepair=DeviceService::manage(p,"CHECK")["capture_runtime"]!="ready";}
@@ -89,7 +89,7 @@ public:
                         if(!QString::fromUtf8(e.what()).startsWith("camera:"))throw;
                         r.needsRepair=true;
                     }
-                } else if(existing) {
+                } else if(existing!=saved.end() && existing->serviceInstance==r.identity.instance) {
                     try {r.hostId=DeviceService::hostAuthorizationId(r.identity);} catch(const std::exception &) {}
                 }
             }catch(const std::exception &e){r.error=QString::fromUtf8(e.what());}
@@ -113,10 +113,25 @@ QJsonObject rvUsbOperationStatus(const RvUsbEnrollment *u) {
 }
 QJsonObject checkRvUsbEnrollmentCore() {
     DeviceService::Identity a,b;
-    a.endpoint.serial="0123456789abcdef";a.endpoint.adapter="test-rndis";a.pin="a";a.boot="first";b=a;
+    a.endpoint.serial="0123456789abcdef";a.endpoint.adapter="test-rndis";a.instance="a";a.boot="first";b=a;
     QJsonObject checks{{"USB_SAME_ATTACHMENT",sameAttachment(a,b)}};
-    b.pin="b";checks["USB_KEY_CHANGE_REJECTED"]=!sameAttachment(a,b);
+    b.instance="b";checks["USB_INSTANCE_CHANGE_REJECTED"]=!sameAttachment(a,b);
     b=a;b.boot="next";checks["USB_BOOT_CHANGE_REJECTED"]=!sameAttachment(a,b);
     b=a;b.endpoint.adapter="other";checks["USB_INTERFACE_CHANGE_REJECTED"]=!sameAttachment(a,b);
+    a.instance=QString(32,'a');a.endpoint.remote=QHostAddress("172.32.0.93");
+    RvDeviceProfile old;
+    old.id="previous-record";old.name="Saved camera name";old.serial=a.endpoint.serial;
+    old.host="172.32.0.93";old.cameraMountRotation=180;
+    old.servicePin=QString(64,'b');old.publicKey="tls-sha256:"+old.servicePin;
+    const auto migrated=DeviceService::profile(a,{old});
+    checks["USB_MIGRATES_SAME_SERIAL_LEGACY_PROFILE"]=migrated.serviceInstance==a.instance
+        && migrated.servicePin.isEmpty() && migrated.publicKey.isEmpty() && old.serviceInstance.isEmpty()
+        && migrated.id==old.id && migrated.name==old.name && migrated.cameraMountRotation==180;
+    b=a;b.instance=QString(32,'c');
+    const auto reflashed=DeviceService::profile(b,{migrated});
+    checks["USB_MIGRATES_SAME_SERIAL_AFTER_ERASE"]=reflashed.id==migrated.id && reflashed.serviceInstance==b.instance;
+    b.endpoint.serial="fedcba9876543210";
+    const auto other=DeviceService::profile(b,{migrated});
+    checks["USB_MIGRATION_NEVER_REUSES_OTHER_SERIAL_PROFILE"]=other.id==b.endpoint.serial && other.id!=migrated.id;
     return checks;
 }

@@ -26,9 +26,10 @@ $manifest = [ordered]@{
     product = $product.product
     abi_version = $product.abi_version
     platform = 'windows-x64'
-    channel = 'windows-device-service-preview'
-    device_service = '1.0.0-preview.1'
-    package_revision = 2
+    channel = 'windows-usb-direct-preview'
+    device_service = '1.0.0-preview.3-usb-direct'
+    usb_camera_ipv4 = '172.32.0.93'
+    package_revision = 4
 }
 
 $sdkBinaries = @('CxwlDepthSdk.dll', 'CxwlDepthSdkExample.exe')
@@ -159,7 +160,7 @@ if (!$ValidateExamplesOnly) {
     if (!(Test-Path -LiteralPath (Join-Path $doc 'index.html'))) { throw 'Doxygen reference is missing.' }
     if (!(Test-Path -LiteralPath (Join-Path $doc '点云录制数据读取说明.pdf') -PathType Leaf)) { throw 'Customer point cloud recording guide is missing.' }
 }
-Copy-Item -LiteralPath (Join-Path $project 'tools/diagnose_cxwl_depth_camera_usb.ps1'),(Join-Path $template 'verify-sdk.ps1'),(Join-Path $template 'build-examples.ps1') -Destination $script
+Copy-Item -LiteralPath (Join-Path $project 'tools/diagnose_cxwl_depth_camera_usb.ps1'),(Join-Path $project 'tools/configure_cxwl_depth_camera_usb.ps1'),(Join-Path $template 'verify-sdk.ps1'),(Join-Path $template 'build-examples.ps1') -Destination $script
 & python (Join-Path $PSScriptRoot 'audit_sdk_runtime.py') --root $runtime --output (Join-Path $output 'Licenses/runtime-license-audit.json')
 if ($LASTEXITCODE) { throw 'Runtime license/module audit failed.' }
 

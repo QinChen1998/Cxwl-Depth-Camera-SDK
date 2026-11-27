@@ -44,7 +44,7 @@ QList<Endpoint> attached()
         for (const auto &address : interface.addressEntries()) {
             if (address.ip().protocol() != QAbstractSocket::IPv4Protocol) continue;
             const auto remote = Transport::cameraAddress(address.ip().toIPv4Address());
-            if (remote.isNull() || remote == address.ip()) continue;
+            if (remote.isNull()) continue;
             result.append({serial, interface.name(), address.ip(), remote, quint32(interface.index())});
             break;
         }
@@ -52,7 +52,7 @@ QList<Endpoint> attached()
     return result;
 }
 
-void Transport::bindInterface(QSslSocket &socket, const Endpoint &endpoint)
+void Transport::bindInterface(QTcpSocket &socket, const Endpoint &endpoint)
 {
     char name[IF_NAMESIZE]{};
     require(if_indextoname(endpoint.index, name) && QString::fromLocal8Bit(name) == endpoint.adapter

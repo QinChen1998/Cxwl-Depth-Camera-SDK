@@ -26,7 +26,7 @@ def build(args):
     product = json.loads((ROOT / "sdk/product.json").read_text(encoding="utf-8"))
     architecture = {"x64": ("Linux x86-64", "__x86_64__"), "arm64": ("Linux ARM64", "__aarch64__")}
     platform, macro = architecture[args.arch]
-    edition = "设备服务 1.0.0-preview.1"
+    edition = "USB 直连 · 1.0.0-preview.3-usb-direct"
     with tempfile.TemporaryDirectory() as folder:
         source = Path(folder)
         headers = source / "sdk"
@@ -37,9 +37,13 @@ def build(args):
         shutil.copytree(ROOT / "docs/sdk", pages)
         linux = (ROOT / "docs/DEPTH_SDK_LINUX.md").read_text(encoding="utf-8")
         section = {part.partition("\n")[0]: part.partition("\n")[2].strip() for part in linux.split("\n## ")[1:]}
+        migration_heading = "## 传输安全与迁移"
+        usb_guide = (pages / "usb.md").read_text(encoding="utf-8")
+        migration = usb_guide.split(migration_heading, 1)[1].split("\n## ", 1)[0].strip()
+        linux_usb = section["接入相机"].replace(" [安全边界与档案迁移](sdk/usb.md)", "")
         supplements = {
             "index": "# Linux 深度相机 SDK\n\n使用 C ABI v3 连接预装设备服务的 RV1103 相机。\n\n@ref sdk_usb\n\n@ref sdk_build\n\n@ref sdk_lifecycle\n",
-            "usb": "@page sdk_usb USB 登记、网络与凭据\n\n" + section["接入相机"],
+            "usb": f"@page sdk_usb USB 登记、网络与凭据\n\n{linux_usb}\n\n{migration_heading}\n\n{migration}",
             "build": "@page sdk_build Linux 构建和部署\n\n" + section["构建客户应用与样例"] + "\n\n" + section["校验交付"],
             "examples": "@page sdk_examples C/C++ 示例\n\n" + section["构建客户应用与样例"],
             "errors": "@page sdk_errors 状态与故障处理\n\n通过 `CxwlDepth_GetSessionStatus` 和 `CxwlDepth_GetStateAlloc` 查询采集状态。在同一所有者线程派发事件，等待停采回执后释放会话。连接失败时检查 USB 网卡、相机登记和设备服务版本。\n\n@ref sdk_usb\n",
@@ -50,10 +54,8 @@ def build(args):
         for name in ("terminology", "specifications", "lifecycle", "json"):
             path = pages / (name + ".md")
             text = path.read_text(encoding="utf-8").replace("Windows 3.0.0 开发版", "SDK 3.0.0")
-            text = text.replace("当前 Windows 用户", "当前 Linux 用户").replace("Windows x64", platform)
+            text = text.replace("当前 Windows 用户", "当前 Linux 用户")
             text = text.replace("Windows 包在 `Example/bin` 提供示例启动器。", "Linux 包在 `Example/bin` 提供可执行样例。")
-            text = text.replace("Windows 三种部署档位包含 SDK、TLS 及各档所需的图像或视频运行库。",
-                                "Linux 的 STANDARD 部署包含 SDK、TLS 插件和图像或视频运行库。")
             path.write_text(text, encoding="utf-8")
 
         config = (ROOT / "tools/depth_sdk_docs/Doxyfile").read_text(encoding="utf-8")
