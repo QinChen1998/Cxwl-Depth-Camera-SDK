@@ -1,6 +1,6 @@
 # CXWL Depth Camera SDK API 参考
 
-SDK v3.0.0 (3.0.0) / ABI v3 · Windows x64 C/C++ · Windows 设备服务预览 · 1.0.0-preview.1。46 个公开函数。
+SDK v3.0.0 (3.0.0) / ABI v3 · Windows x64 C/C++ · Windows USB 直连 · 1.0.0-preview.2-usb-direct。46 个公开函数。
 
 相关的数值、配置和函数指针见 [枚举值](#枚举值)、[宏定义](#宏定义)和[回调类型](#回调类型)。
 
@@ -124,7 +124,7 @@ Windows 3.0.0 开发版需要重新编译使用 ABI v2 的客户程序。CxwlDep
 | [`CxwlDepth_Stop`](#cxwldepth_stop) | 停止采集但保留句柄、回调和配置，适用于所有会话。 |
 | [`CxwlDepth_Reconnect`](#cxwldepth_reconnect) | 重新启动当前设备采集并保留会话。 |
 | [`CxwlDepth_RecoverDevice`](#cxwldepth_recoverdevice) | 清理所选设备的故障状态，并恢复配套采集运行环境。 |
-| [`CxwlDepth_CheckUsb`](#cxwldepth_checkusb) | 停止且空闲时只读检查 USB 接入。Windows 版核验物理网卡、相机序号及设备证书。 |
+| [`CxwlDepth_CheckUsb`](#cxwldepth_checkusb) | 停止且空闲时只读检查 USB 接入，核对物理 USB 网卡、相机序号及设备实例标识。 |
 | [`CxwlDepth_GetUsbStatus`](#cxwldepth_getusbstatus-buffer) | 读取 USB 检查／登记诊断 JSON。 |
 | [`CxwlDepth_EnrollUsb`](#cxwldepth_enrollusb) | 基于有效检查 ID 登记设备，可选择随后启动采集。 |
 | [`CxwlDepth_OpenDeviceManager`](#cxwldepth_opendevicemanager) | 打开可选设备管理器。 |
@@ -564,7 +564,7 @@ CxwlDepthResult CxwlDepth_RecoverDevice(CxwlDepthDeviceManager *manager, const c
 
 ## CxwlDepth_CheckUsb
 
-停止且空闲时只读检查 USB 接入。Windows 版核验物理网卡、相机序号及设备证书。
+停止且空闲时只读检查 USB 接入，核对物理 USB 网卡、相机序号及设备实例标识。
 
 ```c
 CxwlDepthResult CxwlDepth_CheckUsb(CxwlDepthSession *session);
@@ -1598,7 +1598,7 @@ SDK 从相机接收 ToF 坐标系的 XYZ。将点云投到 RGB 像素还需要�
 |---|---|
 | 产品 | RGBD 深度相机 |
 | SDK | Windows 3.0.0 开发版（ABI v3） |
-| 本地预览 | Windows x64，设备服务 1.0.0-preview.1。 |
+| 本地预览 | Windows x64，设备服务 1.0.0-preview.2-usb-direct。 |
 
 
 ### 原生深度档位与测距范围
@@ -1621,7 +1621,7 @@ SDK 从相机接收 ToF 坐标系的 XYZ。将点云投到 RGB 像素还需要�
 
 | 主机与接口 | 相机与验证范围 |
 |---|---|
-| Windows x64，SDK 3.0.0，ABI v3 | RV1103 设备服务 1.0.0-preview.1，SC3336 与 TMF8829 F6。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
+| Windows x64，SDK 3.0.0，ABI v3 | RV1103 设备服务 1.0.0-preview.2-usb-direct，SC3336 与 TMF8829 F6。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
 | Linux x64 与 ARM64 | 这两个平台的设备服务客户端待适配。 |
 
 实机验收比较导出 PLY 与相机传回的同帧 XYZ，并检查有效深度、视频和会话释放。表中的标称测距指标来自传感器数据手册。
@@ -1739,7 +1739,7 @@ C++ 可用 cxwl::state、cxwl::devices、cxwl::manager_state 获取 std::string�
 | `device_id` | string | 否 | 会话级 USB 状态中的内部登记 ID。 |
 | `runtime_replaced` | boolean | 否 | 是否替换运行文件。 |
 | `attachment_id` | string | 否 | 接入指纹，不透明值。 |
-| `host_authorization_id` | string | 否 | 当前 Windows 用户对这台相机的主机授权标识。登记成功后可将此标识交给设备管理员，用于单独授予维护或标定权限。 |
+| `host_authorization_id` | string | 否 | 当前系统用户对这台相机的主机授权标识。登记成功后可将此标识交给设备管理员，用于单独授予维护或标定权限。 |
 | `known` | boolean | 否 | 发现时是否已登记。 |
 | `absent` | boolean | 否 | 是否未发现 USB。 |
 
@@ -2014,7 +2014,7 @@ C++ 可用 cxwl::state、cxwl::devices、cxwl::manager_state 获取 std::string�
 | error_category | 典型含义 | 处理 |
 |---|---|---|
 | NONE (0) | 无会话错误 | 结合 state 和帧可用位判断 |
-| USB (1) | USB 网卡、设备证书核对或准备失败 | 检查 USB 数据线和设备管理器；运行诊断脚本；保存脱敏的 usb_error |
+| USB (1) | USB 网卡、设备序号或实例核对、准备失败 | 检查 USB 数据线和设备管理器，运行诊断脚本并保存脱敏的 usb_error |
 | BOARD_FILES (2) | 板端文件需要修复 | 先 Disconnect 至 OK，再 MaintainBoardFiles(BOARD_REPAIR)，等待维护结果后连接 |
 | CAPTURE (3) | 采集启动、视频或深度恢复失败 | 保存 GetStateAlloc 快照，确认网络和供电，再在空闲后 Reconnect |
 
@@ -2263,7 +2263,15 @@ Integration 目录提供 vcpkg overlay 与 Conan 2 本地配方；均读取本�
 
 ### 核对相机与登记
 
-SDK 根据 USB 枚举序号、网卡和相机证书识别实物。登记成功后，主机身份由当前 Windows 用户的凭据管理器保存。更换相机时，先核对实物，再在设备管理中确认登记。API 客户端使用 `CxwlDepth_ScanUsb` 发起检查，等待管理器空闲，通过 `CxwlDepth_GetManagerStatus` 获取 `usb_check_id`，再将它传给 `CxwlDepth_ConnectWithOptions`。检查和连接须使用同一管理器。设备在两步之间拔插或重启时，重新扫描。
+SDK 根据 USB 枚举序号、物理网卡和相机首次启动时生成的设备实例标识核对实物。每个上位机系统用户首次登记时自动生成独立密钥，板端登记其公钥。Windows 私钥保存在当前用户的凭据管理器，Linux 私钥保存在当前用户专用的 `usb-host-authorizations` 目录。分发镜像和 SDK 不包含这些私钥。
+
+更换相机时先核对实物，再在设备管理中确认登记。API 客户端使用 `CxwlDepth_ScanUsb` 发起检查，等待管理器空闲，通过 `CxwlDepth_GetManagerStatus` 获取 `usb_check_id`，再将它传给 `CxwlDepth_ConnectWithOptions`。检查和连接须使用同一管理器。设备在两步之间拔插或重启时，重新扫描。
+
+### 传输安全与迁移
+
+把相机直接接到受控上位机的 USB 数据口。控制请求使用一次性挑战签名，板端核验主机公钥、操作权限及采集所有权。控制回执、RGB 和深度数据以明文 TCP 传输，能访问或篡改这条数据链路的一方可以观察或干预内容。设备识别依赖 USB 直连和标识核对，适用范围为受控的物理链路。工厂包签名使用独立的固件签名密钥。
+
+USB 直连 SDK 与 `1.0.0-preview.2-usb-direct` 完整镜像配套，`1.0.0-preview.1` 和原 SDK 继续成对使用。两版的设备协议互不兼容。换用直连版时可用空档案重新登记，也可以在旧档案副本中移除同序号的旧记录后再扫描登记。全擦后相机会生成新的实例标识，同一台相机也需重新登记。原有主机授权标识不会继承到新版本，维护和校正权限按新登记标识重新授予。
 
 ### 两台相机同时接入 Windows
 
@@ -2275,20 +2283,20 @@ SDK 根据 USB 枚举序号、网卡和相机证书识别实物。登记成功�
 
 1. 确认 USB 网卡启用并取得 IPv4 地址。
 2. 确认该网卡允许连接相机的 TCP 8943。在设备管理中再次扫描。
-3. 出现固件不匹配提示时，向设备供应方索取与设备服务 1.0.0-preview.1 配套的固件。旧固件继续使用原配稳定版 SDK。
-4. 若报告设备身份变化，核对机身序号及替换记录，再在设备管理中确认。
+3. 出现固件不匹配提示时，核对 SDK 与相机服务的配套版本。
+4. 若报告设备实例变化，核对机身序号及刷机或替换记录，移除旧登记后重新扫描。
 
 在包根目录运行 PowerShell 脚本 Script/diagnose_cxwl_depth_camera_usb.ps1 取得主机网卡、USB 接口和驱动报告。报告包含本机硬件标识。
 
 ### 维护与标定
 
-设备登记完成后，从 `CxwlDepth_GetDeviceManagerStateAlloc` 返回的 `usb.host_authorization_id` 读取主机授权标识。每台相机和每个 Windows 用户分别登记。
+设备登记完成后，从 `CxwlDepth_GetDeviceManagerStateAlloc` 返回的 `usb.host_authorization_id` 读取主机授权标识。每台相机与每个上位机系统用户分别登记。
 
 停止并释放采集会话，再使用设备管理中的维护功能，或启动独立工具 CxwlRgbCalibration.exe 进行 RGB 校正。板端核对受管文件和该主机的独立操作权限。权限不足时联系设备管理员，并提供设备序号及主机授权标识。成功的 RGB 标定可从校正状态、实际 ISP 试载回执及 IQ 摘要复核。
 
 ## Windows 独立 RGB 校正工具
 
-在解决方案中构建 CxwlRgbCalibration。运行 CxwlRgbCalibration.exe，按 USB 序列号选择已登记相机，点击“查看校正状态”。工具沿用 SDK 的本机设备登记与证书核验。使用单独设备档案时点击“选择设备档案”，也可以传入 --device-store 路径。
+在解决方案中构建 CxwlRgbCalibration。运行 CxwlRgbCalibration.exe，按 USB 序列号选择已登记相机，点击“查看校正状态”。工具使用 SDK 的 USB 网卡核对和本机主机授权。使用单独设备档案时点击“选择设备档案”，也可以传入 --device-store 路径。
 
 需要重新标定时，先停止所选相机的采集，让均匀照明的平整白板充满画面。点击“采集并写入校正”，核对序列号后确认。工具采集 21 帧，计算双绿网格、试加载并核验板端写入结果。结果会区分已写入、现有校正有效、样本不足和设备错误。日常采集由板端 ISP 使用已经部署的校正。
 

@@ -9,7 +9,7 @@ New-Item -ItemType Directory -Path $out | Out-Null
 ./Example/bin/CxwlDepthSelfTest.exe -v -Report (Join-Path $out 'self-test.json')
 ```
 
-接上预装设备服务 1.0.0-preview.1 的相机后，先运行 QuickStart 确认深度和视频均到达，再运行 `./Example/bin/CxwlDepthPointCloud.exe -Out $out` 保存同帧 XYZ 和深度图。C 使用 `CxwlDepth_Connect`，C++17 使用 `cxwl::Session`，两者加载相同的 Windows DLL。维护、修复或恢复前先释放目标相机的采集会话。
+接上预装 `1.0.0-preview.2-usb-direct` 设备服务的相机后，先运行 QuickStart 确认深度和视频均到达，再运行 `./Example/bin/CxwlDepthPointCloud.exe -Out $out` 保存同帧 XYZ 和深度图。C 使用 `CxwlDepth_Connect`，C++17 使用 `cxwl::Session`，两者加载相同的 Windows DLL。维护、修复或恢复前先释放目标相机的采集会话。
 
 | 程序 | 参数 | 预期输出 |
 |---|---|---|

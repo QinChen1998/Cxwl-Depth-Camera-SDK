@@ -4,7 +4,7 @@
 
 `private_build/windows-device-service` 留在本地开发环境。板端签名包构建使用 `make_board_package.py`，生成于 `x64/factory`。原始固定输入通过已有签名验证。更换板端服务后应在授权签发工位完成签名。私钥保存在项目外的签发库，设备登记档案与实测场景数据独立于源码。工位人员可在本地私有目录打开 `工位操作说明.md`。
 
-工厂程序使用装有 cryptography、Tk 和 PyInstaller 6.16 的 Python。从项目根目录运行下面的命令，先生成签名载荷，再构建和离线核验工位程序。认证签发由单独的签发端处理。
+USB 直连测试镜像的签名载荷、制镜像源码和验收记录由本机工厂项目保存。固件完整性签名与客户首次 USB 登记分别处理。以下命令用于 `1.0.0-preview.1` 旧版工厂程序和回退测试，使用装有 cryptography、Tk 和 PyInstaller 6.16 的 Python。
 
 ```powershell
 $factoryPython = (Get-Command python).Source

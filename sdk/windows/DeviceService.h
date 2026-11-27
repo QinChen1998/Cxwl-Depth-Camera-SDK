@@ -14,7 +14,7 @@ struct Endpoint {
 };
 struct Identity {
     Endpoint endpoint;
-    QString pin, boot, epoch, legacyKey;
+    QString instance, boot, epoch;
     bool active=false;
     QList<int> modes;
 };

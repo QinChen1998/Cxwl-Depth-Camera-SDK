@@ -12,6 +12,7 @@ string(JSON sdk_abi GET "${product}" abi_version)
 
 find_package(Qt6 6.11.1 EXACT REQUIRED COMPONENTS Core Gui Network Concurrent)
 find_package(Threads REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
 add_library(CxwlDepthSdk SHARED
     sdk/DepthSdk.cpp
@@ -34,7 +35,7 @@ target_include_directories(CxwlDepthSdk PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sdk>" "$<INSTALL_INTERFACE:include>"
     PRIVATE third_party/ffmpeg_7_1_3)
 target_compile_definitions(CxwlDepthSdk PRIVATE CXWL_DEPTH_SDK_BUILD CXWL_INSTALLER_BUILD)
-target_link_libraries(CxwlDepthSdk PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Concurrent Threads::Threads ${CMAKE_DL_LIBS})
+target_link_libraries(CxwlDepthSdk PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Concurrent Threads::Threads OpenSSL::Crypto ${CMAKE_DL_LIBS})
 set(exports_map "${CMAKE_CURRENT_SOURCE_DIR}/tools/linux/exports.map")
 target_link_options(CxwlDepthSdk PRIVATE "LINKER:--version-script=${exports_map}" LINKER:-z,defs)
 set_target_properties(CxwlDepthSdk PROPERTIES
@@ -67,7 +68,7 @@ if(BUILD_TESTING)
         sdk/linux/CameraCredentials.cpp RuntimeDiscovery.cpp)
     target_compile_features(cxwl_linux_credentials_tests PRIVATE cxx_std_17)
     target_compile_options(cxwl_linux_credentials_tests PRIVATE -UNDEBUG)
-    target_link_libraries(cxwl_linux_credentials_tests PRIVATE Qt6::Core Qt6::Network)
+    target_link_libraries(cxwl_linux_credentials_tests PRIVATE Qt6::Core Qt6::Network OpenSSL::Crypto)
     add_test(NAME linux_service_credentials COMMAND cxwl_linux_credentials_tests)
     set_tests_properties(cpp_helpers linux_service_credentials PROPERTIES ENVIRONMENT "RV_TEST_OFFLINE_ONLY=1")
 endif()

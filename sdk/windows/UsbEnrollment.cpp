@@ -17,7 +17,7 @@ struct Result {
 };
 bool sameAttachment(const DeviceService::Identity &a,const DeviceService::Identity &b) {
     return a.endpoint.serial==b.endpoint.serial && a.endpoint.adapter==b.endpoint.adapter
-        && a.endpoint.index==b.endpoint.index && a.pin==b.pin && a.boot==b.boot;
+        && a.endpoint.index==b.endpoint.index && a.instance==b.instance && a.boot==b.boot;
 }
 }
 class RvUsbEnrollment final:public QObject {
@@ -56,7 +56,7 @@ public:
                 auto p=DeviceService::profile(checked,current.profiles());
                 auto list=current.profiles();
                 auto existing=std::find_if(list.begin(),list.end(),[&](auto &e){return e.id==p.id;});
-                known=existing!=list.end() && !existing->servicePin.isEmpty();
+                known=existing!=list.end() && !existing->serviceInstance.isEmpty();
                 if(checkOnly) {
                     id=++next;checkedStop=stop;revision=snapshot;
                     state=known?"ready":"registration_required";deviceId=known?p.id:QString();
@@ -113,9 +113,9 @@ QJsonObject rvUsbOperationStatus(const RvUsbEnrollment *u) {
 }
 QJsonObject checkRvUsbEnrollmentCore() {
     DeviceService::Identity a,b;
-    a.endpoint.serial="0123456789abcdef";a.endpoint.adapter="test-rndis";a.pin="a";a.boot="first";b=a;
+    a.endpoint.serial="0123456789abcdef";a.endpoint.adapter="test-rndis";a.instance="a";a.boot="first";b=a;
     QJsonObject checks{{"USB_SAME_ATTACHMENT",sameAttachment(a,b)}};
-    b.pin="b";checks["USB_KEY_CHANGE_REJECTED"]=!sameAttachment(a,b);
+    b.instance="b";checks["USB_INSTANCE_CHANGE_REJECTED"]=!sameAttachment(a,b);
     b=a;b.boot="next";checks["USB_BOOT_CHANGE_REJECTED"]=!sameAttachment(a,b);
     b=a;b.endpoint.adapter="other";checks["USB_INTERFACE_CHANGE_REJECTED"]=!sameAttachment(a,b);
     return checks;

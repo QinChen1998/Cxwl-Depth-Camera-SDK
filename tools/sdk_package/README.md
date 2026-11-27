@@ -52,7 +52,7 @@ Get-ChildItem -LiteralPath $out
 |---|---|
 | 系统与相机 | Windows x64，配套 CXWL SC3336 + TMF8829 相机。 [版本兼容矩阵与验收范围](Doc/api/Chinese/sdk_specifications.html#sdk_validation_scope) |
 | 会话与线程 | 单进程单采集会话；在创建句柄的线程调用；帧地址仅在回调期间有效。 |
-| 板端 | CXWL 相机预装设备服务 1.0.0-preview.1 并配备本机 F6 标定。旧固件使用原配稳定版 SDK。 |
+| 板端 | CXWL 相机预装 `1.0.0-preview.2-usb-direct` 设备服务并配备本机 F6 标定。旧固件使用原配 SDK。 |
 | USB 与权限 | 数据线、稳定供电、相机 RNDIS 网卡；首次驱动安装与 USB 网络配置可能需要管理员权限。已配置设备日常采集使用普通用户。 |
 | 空间 | 建议预留 300 MiB，用于解压及更新临时副本；这是余量建议，不是包体积。实际文件与各档字节数见 [package-size.json](Doc/package-size.json)，构建／采集数据另计。 |
 

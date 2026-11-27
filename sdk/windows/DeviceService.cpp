@@ -17,9 +17,6 @@
 #include <QtCore/QUuid>
 #include <QtCore/QtEndian>
 #include <QtNetwork/QNetworkProxy>
-#include <QtNetwork/QSslConfiguration>
-#include <QtNetwork/QSslKey>
-#include <QtNetwork/QSslSocket>
 #include <QtNetwork/QTcpServer>
 #include <algorithm>
 #include <stdexcept>
@@ -49,14 +46,13 @@ void archive(const Identity &i,const QByteArray &secret,QJsonObject &receipt) {
 }
 RvDeviceProfile profile(const Identity &i,const QVector<RvDeviceProfile> &known) {
     RvDeviceProfile result;result.serial=i.endpoint.serial;result.id=result.serial;result.name=result.defaultName();
-    result.publicKey="tls-sha256:"+i.pin;
     for(auto &p:known) {
         if(p.serial!=result.serial) continue;
-        require(p.servicePin.isEmpty()?p.publicKey==i.legacyKey:p.servicePin==i.pin,
-                QStringLiteral("设备身份与登记记录冲突。请确认设备替换并移除原登记后重新登记。"));
+        require(p.serviceInstance==i.instance,
+                QStringLiteral("设备实例与原档案不同。请核对实物，移除原登记并重新登记。"));
         result=p;break;
     }
-    result.servicePin=i.pin;result.host=i.endpoint.remote.toString();result.validate();
+    result.serviceInstance=i.instance;result.host=i.endpoint.remote.toString();result.validate();
     return result;
 }
 void enroll(const Identity &i) {
@@ -64,7 +60,7 @@ void enroll(const Identity &i) {
     require(request(i,secret,"PAIR")["paired"]==true,QStringLiteral("设备登记回执无效"));
 }
 QString hostAuthorizationId(const Identity &i) {
-    return QString::fromLatin1(sha(credential(i,false)));
+    return QString::fromLatin1(sha(hostPublicKey(credential(i,false))));
 }
 Capture start(const RvDeviceProfile &device,int mode,const QString &generation,const QString &expectedBoot) {
     auto i=verified(device);
@@ -90,7 +86,7 @@ void stop(const Capture &c) {
         require(request(c.identity,c.credential,"STOP",{c.generation.toLatin1()},25000)["stopped"]==true,QStringLiteral("未收到设备停止回执"));
     } catch(const std::exception &) {
         auto current=inspect(c.identity.endpoint.serial);
-        require(current.pin==c.identity.pin && (current.boot!=c.identity.boot || !current.active),QStringLiteral("本次采集的释放状态无法确认"));
+        require(current.instance==c.identity.instance && (current.boot!=c.identity.boot || !current.active),QStringLiteral("本次采集的释放状态无法确认"));
     }
 }
 void heartbeat(const Capture &c) {request(c.identity,c.credential,"PING",{c.generation.toLatin1()});}
@@ -144,10 +140,9 @@ void MediaPipe::run() {
         auto *local=server.nextPendingConnection();
         if(!local)return;
         try {
-            auto s=openChannel(capture.identity.endpoint,capture.identity.pin);
-            exchange(*s,capture.identity.endpoint,"DATA",capture.identity.boot,capture.credential,
-                     {capture.generation.toLatin1(),capture.grant,stream});
-            auto *remote=s.release();remote->setParent(local);
+            auto channel=openChannel(capture.identity.endpoint,capture.identity.instance,capture.identity.boot);
+            exchange(channel,"DATA",capture.credential,{capture.generation.toLatin1(),capture.grant,stream});
+            auto *remote=channel.socket.release();remote->setParent(local);
             local->setReadBufferSize(256*1024);remote->setReadBufferSize(256*1024);
             local->setSocketOption(QAbstractSocket::LowDelayOption,1);
             remote->setSocketOption(QAbstractSocket::LowDelayOption,1);
@@ -158,10 +153,10 @@ void MediaPipe::run() {
                 }
             };
             connect(local,&QTcpSocket::readyRead,local,[=]{forward(local,remote);});
-            connect(remote,&QSslSocket::readyRead,local,[=]{forward(remote,local);});
+            connect(remote,&QTcpSocket::readyRead,local,[=]{forward(remote,local);});
             connect(local,&QTcpSocket::bytesWritten,local,[=]{forward(remote,local);});
-            connect(remote,&QSslSocket::bytesWritten,local,[=]{forward(local,remote);});
-            connect(remote,&QSslSocket::disconnected,local,&QTcpSocket::disconnectFromHost);
+            connect(remote,&QTcpSocket::bytesWritten,local,[=]{forward(local,remote);});
+            connect(remote,&QTcpSocket::disconnected,local,&QTcpSocket::disconnectFromHost);
             connect(local,&QTcpSocket::disconnected,local,&QObject::deleteLater);
             forward(local,remote);forward(remote,local);
         } catch(const std::exception&) {local->abort();local->deleteLater();}

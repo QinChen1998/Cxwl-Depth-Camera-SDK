@@ -7,7 +7,7 @@
 |---|---|
 | 产品 | RGBD 深度相机 |
 | SDK | Windows 3.0.0 开发版（ABI v3） |
-| 本地预览 | Windows x64，设备服务 1.0.0-preview.1。 |
+| 本地预览 | Windows x64，设备服务 1.0.0-preview.2-usb-direct。 |
 
 @anchor sdk_depth_presets
 
@@ -32,7 +32,7 @@
 
 | 主机与接口 | 相机与验证范围 |
 |---|---|
-| Windows x64，SDK 3.0.0，ABI v3 | RV1103 设备服务 1.0.0-preview.1，SC3336 与 TMF8829 F6。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
+| Windows x64，SDK 3.0.0，ABI v3 | RV1103 设备服务 1.0.0-preview.2-usb-direct，SC3336 与 TMF8829 F6。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
 | Linux x64 与 ARM64 | 这两个平台的设备服务客户端待适配。 |
 
 实机验收比较导出 PLY 与相机传回的同帧 XYZ，并检查有效深度、视频和会话释放。表中的标称测距指标来自传感器数据手册。

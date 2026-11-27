@@ -52,7 +52,7 @@ QList<Endpoint> attached()
     return result;
 }
 
-void Transport::bindInterface(QSslSocket &socket, const Endpoint &endpoint)
+void Transport::bindInterface(QTcpSocket &socket, const Endpoint &endpoint)
 {
     char name[IF_NAMESIZE]{};
     require(if_indextoname(endpoint.index, name) && QString::fromLocal8Bit(name) == endpoint.adapter

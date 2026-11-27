@@ -9,28 +9,20 @@
 #include <wincred.h>
 #include <bcrypt.h>
 #endif
-#include "DeviceService.h"
-#include "DeviceTrust.h"
+#include "../../RuntimeDiscovery.h"
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QDir>
-#include <QtCore/QSaveFile>
+#include <QtCore/QLockFile>
 #include <QtCore/QScopeGuard>
-#include <QtCore/QStandardPaths>
 #include <QtCore/QDeadlineTimer>
-#include <QtCore/QEventLoop>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QRegularExpression>
-#include <QtCore/QSet>
-#include <QtCore/QTimer>
 #include <QtCore/QUuid>
 #include <QtCore/QtEndian>
 #include <QtNetwork/QNetworkProxy>
-#include <QtNetwork/QSslConfiguration>
-#include <QtNetwork/QSslKey>
-#include <QtNetwork/QSslSocket>
-#include <QtNetwork/QTcpServer>
 #include <algorithm>
+#include <cstring>
 #include <stdexcept>
 #include <vector>
 
@@ -78,35 +70,14 @@ QMap<QString,QString> usbParents() {
     SetupDiDestroyDeviceInfoList(devices);
     return results;
 }
-void bindInterface(QSslSocket &socket,const Endpoint &endpoint) {
+void bindInterface(QTcpSocket &socket,const Endpoint &endpoint) {
+    require(usbParents().value(endpoint.adapter)==endpoint.serial,QStringLiteral("USB 网卡已变化"));
     const DWORD index=htonl(endpoint.index);
     require(setsockopt(SOCKET(socket.socketDescriptor()),IPPROTO_IP,IP_UNICAST_IF,
                        reinterpret_cast<const char*>(&index),sizeof(index))==0,QStringLiteral("USB 网卡已变化"));
 }
 #endif
-QString pinOf(const QSslCertificate &cert) {
-    return QString::fromLatin1(QCryptographicHash::hash(cert.publicKey().toDer(),QCryptographicHash::Sha256).toHex());
-}
-std::unique_ptr<QSslSocket> openChannel(const Endpoint &e,const QString &expected) {
-    require(qEnvironmentVariable("RV_TEST_OFFLINE_ONLY")!="1",QStringLiteral("离线测试禁止连接相机"));
-    auto s=std::make_unique<QSslSocket>();
-    s->setProxy(QNetworkProxy::NoProxy);
-    auto conf=QSslConfiguration::defaultConfiguration();
-    conf.setCaCertificates(QSslCertificate::fromData(cameraTrust));
-    conf.setProtocol(QSsl::TlsV1_2OrLater);
-    conf.setPeerVerifyMode(QSslSocket::VerifyPeer);
-    s->setSslConfiguration(conf);
-    require(s->bind(e.local),QStringLiteral("无法绑定已核验的 USB 网卡"));
-    bindInterface(*s,e);
-    s->setPeerVerifyName(e.serial+".cxwl.camera");
-    s->connectToHostEncrypted(e.remote.toString(),8943);
-    require(s->waitForEncrypted(4500),QStringLiteral("相机服务未就绪或凭据验证失败。请检查配套固件，旧固件可使用稳定版 SDK。 ")+s->errorString());
-    const auto leaf=s->peerCertificate();
-    require(!leaf.isNull() && (expected.isEmpty() || pinOf(leaf)==expected),
-            QStringLiteral("相机公钥与登记记录不匹配，请在设备管理中确认设备替换。"));
-    return s;
-}
-QByteArray take(QSslSocket &s,int count,QDeadlineTimer &deadline) {
+QByteArray take(QTcpSocket &s,int count,QDeadlineTimer &deadline) {
     QByteArray bytes;
     while(bytes.size()<count) {
         if(!s.bytesAvailable()) {
@@ -117,66 +88,156 @@ QByteArray take(QSslSocket &s,int count,QDeadlineTimer &deadline) {
     }
     return bytes;
 }
-QJsonObject exchange(QSslSocket &s,const Endpoint &ep,const QByteArray &op,const QString &boot,const QByteArray &credential,const QList<QByteArray> &args,int ms) {
+Channel openChannel(const Endpoint &e,const QString &instance,const QString &boot) {
+    require(qEnvironmentVariable("RV_TEST_OFFLINE_ONLY")!="1",QStringLiteral("离线测试禁止连接相机"));
+    auto socket=std::make_unique<QTcpSocket>();
+    socket->setProxy(QNetworkProxy::NoProxy);
+    require(socket->bind(e.local),QStringLiteral("无法绑定已核验的 USB 网卡"));
+    bindInterface(*socket,e);
+    socket->connectToHost(e.remote,8943);
+    const auto incompatible=QStringLiteral("相机 USB 直连接口未就绪。请检查数据线及 SDK 与固件的配套版本。");
+    QDeadlineTimer deadline(4500);
+    require(socket->waitForConnected(int(deadline.remainingTime())),incompatible+socket->errorString());
+    socket->setSocketOption(QAbstractSocket::LowDelayOption,1);
+    QByteArray preface;
+    try { preface=take(*socket,124,deadline); }
+    catch(const std::runtime_error &) { throw std::runtime_error(incompatible.toUtf8().constData()); }
+    static const QRegularExpression pattern(QStringLiteral(
+        "\\ACX2 ([0-9a-f]{16}) ([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}) ([0-9a-f]{32}) [0-9a-f]{32}\\n\\z"));
+    const auto matched=pattern.match(QString::fromLatin1(preface));
+    require(matched.hasMatch() && matched.captured(1)==e.serial,QStringLiteral("相机 USB 协议版本或序列号不匹配"));
+    require(instance.isEmpty() || matched.captured(3)==instance,QStringLiteral("设备实例与登记记录不匹配，请核验实物并重新登记"));
+    require(boot.isEmpty() || matched.captured(2)==boot,QStringLiteral("设备已重启，请重新连接"));
+    return {std::move(socket),e.serial,matched.captured(2),matched.captured(3),preface};
+}
+QJsonObject exchange(Channel &channel,const QByteArray &op,const QByteArray &credential,const QList<QByteArray> &args,int ms) {
+    auto &s=*channel.socket;
     const auto id=QUuid::createUuid().toString(QUuid::Id128).toLatin1();
-    QByteArray request="CX1 "+id+' '+op+' '+(boot.isEmpty()?QByteArray("-"):boot.toLatin1())+' '+(credential.isEmpty()?QByteArray("-"):credential);
+    require(!credential.isEmpty() || op=="HELLO",QStringLiteral("请先通过设备管理登记这台相机"));
+    QByteArray owner="-";
+    if(!credential.isEmpty()) {
+        const auto publicKey=hostPublicKey(credential);
+        owner=op=="PAIR"?publicKey.toHex():sha(publicKey);
+    }
+    QByteArray request="CX2 "+id+' '+op+' '+channel.boot.toLatin1()+' '+owner;
     for(const auto &arg:args) {
-        require(!arg.isEmpty() && !arg.contains(' ') && !arg.contains('\n') && !arg.contains('\r'),QStringLiteral("无效的设备参数"));
+        require(!arg.isEmpty() && std::all_of(arg.cbegin(),arg.cend(),[](unsigned char c){return c>32 && c<127;}),
+                QStringLiteral("无效的设备参数"));
         request+=' ';request+=arg;
     }
-    request+='\n';
-    require(request.size()<512 && s.write(request)==request.size(),QStringLiteral("无法发送设备请求"));
+    const auto proof=credential.isEmpty()?QByteArray("-"):signHostRequest(credential,channel.preface+request).toHex();
+    request+=' ';request+=proof;request+='\n';
+    require(request.size()<=768 && s.write(request)==request.size(),QStringLiteral("无法发送设备请求"));
     s.flush();
     QDeadlineTimer deadline(ms);
     const auto header=take(s,4,deadline);
     auto length=qFromBigEndian<quint32>(header.constData());
     require(length>0 && length<=128*1024,QStringLiteral("无效的服务回执长度"));
     auto doc=QJsonDocument::fromJson(take(s,length,deadline)).object();
-    require(doc["v"]==1 && doc["id"].toString().toLatin1()==id && doc["serial"]==ep.serial
-        && QRegularExpression("^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$").match(doc["boot"].toString()).hasMatch()
-        && (boot.isEmpty() || doc["boot"]==boot) && doc["body"].isObject(),QStringLiteral("设备服务回执身份不匹配"));
+    require(doc["v"]==2 && doc["id"].toString().toLatin1()==id && doc["serial"]==channel.serial
+        && doc["boot"]==channel.boot && doc["instance"]==channel.instance && doc["body"].isObject(),
+        QStringLiteral("设备服务回执身份不匹配"));
     require(doc["code"]=="ok",doc["code"].toString()+": "+doc["body"].toObject()["error"].toString());
     return doc;
 }
 #ifdef _WIN32
+namespace {
+constexpr int curveBytes=32;
+constexpr int credentialBytes=sizeof(BCRYPT_ECCKEY_BLOB)+3*curveBytes;
+const auto invalidKey=QStringLiteral("本机设备登记损坏");
+
+void validateHostKey(const QByteArray &key) {
+    BCRYPT_ECCKEY_BLOB header{};
+    require(key.size()==credentialBytes,invalidKey);
+    std::memcpy(&header,key.constData(),sizeof(header));
+    require(header.dwMagic==BCRYPT_ECDSA_PRIVATE_P256_MAGIC && header.cbKey==curveBytes,invalidKey);
+}
+
+BCRYPT_ALG_HANDLE openHostAlgorithm() {
+    BCRYPT_ALG_HANDLE algorithm=nullptr;
+    require(BCryptOpenAlgorithmProvider(&algorithm,BCRYPT_ECDSA_P256_ALGORITHM,nullptr,0)==0,
+            QStringLiteral("无法初始化主机签名算法"));
+    return algorithm;
+}
+
+QByteArray generateHostKey() {
+    const auto algorithm=openHostAlgorithm();
+    const auto close=qScopeGuard([=]{BCryptCloseAlgorithmProvider(algorithm,0);});
+    BCRYPT_KEY_HANDLE key=nullptr;
+    const auto error=QStringLiteral("无法生成主机身份");
+    require(BCryptGenerateKeyPair(algorithm,&key,256,0)==0,error);
+    const auto destroy=qScopeGuard([=]{BCryptDestroyKey(key);});
+    require(BCryptFinalizeKeyPair(key,0)==0,error);
+    QByteArray blob(credentialBytes,Qt::Uninitialized);
+    ULONG size=0;
+    require(BCryptExportKey(key,nullptr,BCRYPT_ECCPRIVATE_BLOB,reinterpret_cast<PUCHAR>(blob.data()),
+                            ULONG(blob.size()),&size,0)==0 && size==ULONG(blob.size()),error);
+    return blob;
+}
+}
+
 QByteArray credential(const Identity &i,bool create) {
-    const auto target=(QStringLiteral("CXWL Device Service/")+i.endpoint.serial+"/"+i.pin).toStdWString();
+    const auto target=(QStringLiteral("CXWL USB Direct/")+i.endpoint.serial+"/"+i.instance).toStdWString();
+    const auto directory=RuntimeDiscovery::managedConfigurationDirectory();
+    QLockFile lock(QDir(directory).filePath(QStringLiteral("usb-host-")+i.endpoint.serial+"-"+i.instance+".lock"));
+    if(create) require(QDir().mkpath(directory) && lock.tryLock(2000),QStringLiteral("本机设备登记不可写或正在使用"));
     PCREDENTIALW existing=nullptr;
     if(CredReadW(target.c_str(),CRED_TYPE_GENERIC,0,&existing)) {
         QByteArray bytes(reinterpret_cast<char*>(existing->CredentialBlob),int(existing->CredentialBlobSize));
+        SecureZeroMemory(existing->CredentialBlob,existing->CredentialBlobSize);
         CredFree(existing);
-        require(bytes.size()==32,QStringLiteral("本机设备登记损坏"));
-        return bytes.toHex();
+        validateHostKey(bytes);
+        return bytes;
     }
     require(GetLastError()==ERROR_NOT_FOUND && create,QStringLiteral("请先通过设备管理登记这台相机"));
-    unsigned char secret[32]{};
-    require(BCryptGenRandom(nullptr,secret,sizeof(secret),BCRYPT_USE_SYSTEM_PREFERRED_RNG)==0,QStringLiteral("无法生成主机身份"));
+    auto secret=generateHostKey();
     CREDENTIALW item{};item.Type=CRED_TYPE_GENERIC;item.TargetName=const_cast<wchar_t*>(target.c_str());
-    item.CredentialBlobSize=sizeof(secret);item.CredentialBlob=secret;item.Persist=CRED_PERSIST_LOCAL_MACHINE;
+    item.CredentialBlobSize=DWORD(secret.size());item.CredentialBlob=reinterpret_cast<LPBYTE>(secret.data());item.Persist=CRED_PERSIST_LOCAL_MACHINE;
     require(CredWriteW(&item,0),QStringLiteral("Windows 无法保存本机的设备登记"));
-    auto out=QByteArray(reinterpret_cast<char*>(secret),sizeof(secret)).toHex();
-    SecureZeroMemory(secret,sizeof(secret));return out;
+    return secret;
+}
+QByteArray hostPublicKey(const QByteArray &key) {
+    validateHostKey(key);
+    return QByteArray(1,'\x04')+key.mid(sizeof(BCRYPT_ECCKEY_BLOB),2*curveBytes);
+}
+QByteArray signHostRequest(const QByteArray &key,const QByteArray &message) {
+    validateHostKey(key);
+    const auto algorithm=openHostAlgorithm();
+    const auto close=qScopeGuard([=]{BCryptCloseAlgorithmProvider(algorithm,0);});
+    BCRYPT_KEY_HANDLE imported=nullptr;
+    require(BCryptImportKeyPair(algorithm,nullptr,BCRYPT_ECCPRIVATE_BLOB,&imported,
+                                reinterpret_cast<PUCHAR>(const_cast<char*>(key.constData())),ULONG(key.size()),0)==0,invalidKey);
+    const auto destroy=qScopeGuard([=]{BCryptDestroyKey(imported);});
+    auto digest=QCryptographicHash::hash(message,QCryptographicHash::Sha256);
+    QByteArray proof(2*curveBytes,Qt::Uninitialized);
+    ULONG size=0;
+    require(BCryptSignHash(imported,nullptr,reinterpret_cast<PUCHAR>(digest.data()),ULONG(digest.size()),
+                           reinterpret_cast<PUCHAR>(proof.data()),ULONG(proof.size()),&size,0)==0 && size==ULONG(proof.size()),
+            QStringLiteral("无法为设备操作生成主机签名"));
+    return proof;
 }
 #endif
 QJsonObject request(const Identity &i,const QByteArray &secret,const QByteArray &op,const QList<QByteArray> &args,int ms) {
-    auto socket=openChannel(i.endpoint,i.pin);
-    return exchange(*socket,i.endpoint,op,i.boot,secret,args,ms)["body"].toObject();
+    auto channel=openChannel(i.endpoint,i.instance,i.boot);
+    return exchange(channel,op,secret,args,ms)["body"].toObject();
 }
 Identity verified(const RvDeviceProfile &device) {
+    require(!device.serviceInstance.isEmpty(),QStringLiteral("旧版设备档案需要重新登记，或使用原版 SDK 与固件"));
     auto i=inspect(device.serial);
-    require(!device.servicePin.isEmpty() && i.pin==device.servicePin,QStringLiteral("请在设备管理中核验此相机身份后再连接"));
+    require(i.instance==device.serviceInstance,QStringLiteral("设备实例与登记记录不匹配，请核验实物并重新登记"));
     return i;
 }
 Transfer transfer(const Identity &i,const QByteArray &secret,const QByteArray &op,const QList<QByteArray> &args) {
-    auto socket=openChannel(i.endpoint,i.pin);
-    const auto initial=exchange(*socket,i.endpoint,op,i.boot,secret,args,30000);
-    return {std::move(socket),initial["id"].toString().toLatin1()};
+    auto channel=openChannel(i.endpoint,i.instance,i.boot);
+    const auto initial=exchange(channel,op,secret,args,30000);
+    return {std::move(channel.socket),initial["id"].toString().toLatin1()};
 }
 void transferred(Transfer &t,const Identity &i,QDeadlineTimer &deadline) {
     const auto size=qFromBigEndian<quint32>(take(*t.socket,4,deadline).constData());
     require(size>0 && size<=16384,QStringLiteral("设备传输结果长度无效"));
     const auto j=QJsonDocument::fromJson(take(*t.socket,int(size),deadline)).object();
-    require(j["v"]==1 && j["id"].toString().toLatin1()==t.id && j["serial"]==i.endpoint.serial && j["boot"]==i.boot && j["code"]=="ok",
+    require(j["v"]==2 && j["id"].toString().toLatin1()==t.id && j["serial"]==i.endpoint.serial && j["boot"]==i.boot
+            && j["instance"]==i.instance && j["code"]=="ok",
             QStringLiteral("设备传输未确认。")+j["body"].toObject()["error"].toString());
 }
 void download(const Identity &i,const QByteArray &secret,const QByteArray &op,const QList<QByteArray> &args,
@@ -227,8 +288,8 @@ Identity inspect(const QString &selected) {
     if(!selected.isEmpty()) choices.erase(std::remove_if(choices.begin(),choices.end(),[&](auto &e){return e.serial!=selected;}),choices.end());
     require(choices.size()==1,choices.isEmpty()?QStringLiteral("没有找到目标 USB 相机。请检查数据线和 RNDIS 网卡，等待其取得 IPv4 地址。")
         :QStringLiteral("检测到多台相机，请指定已登记设备或单独接入待登记相机。"));
-    auto e=choices.first();auto s=openChannel(e,{});
-    auto result=exchange(*s,e,"HELLO",{},{},{});
+    const auto e=choices.first();auto channel=openChannel(e);
+    const auto result=exchange(channel,"HELLO",{},{});
     const auto body=result["body"].toObject();
     QList<int> modes;
     for (const auto &item : body["modes"].toArray()) {
@@ -237,6 +298,6 @@ Identity inspect(const QString &selected) {
     }
     require(!modes.isEmpty() && QRegularExpression("^[0-9a-f]{32}$").match(body["epoch"].toString()).hasMatch(),
             QStringLiteral("相机服务版本不兼容"));
-    return {e,pinOf(s->peerCertificate()),result["boot"].toString(),body["epoch"].toString(),body["legacy_public_key"].toString(),body["active"].toBool(),modes};
+    return {e,channel.instance,channel.boot,body["epoch"].toString(),body["active"].toBool(),modes};
 }
 } // namespace DeviceService

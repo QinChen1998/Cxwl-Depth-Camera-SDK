@@ -16,7 +16,7 @@ python -B tests/test_depth_sdk_abi.py --dll x64/Release/CxwlDepthSdk.dll --outpu
 python -B tools/run_offline_tests.py --configuration Release --qt-root $env:CXWL_QT_ROOT --local-runtime --output x64/validation/desktop
 ```
 
-实机使用独立的、已登记相机档案副本。依赖 Python、NumPy 和 Pillow。将 `$profilePath` 指向档案，从当前目录运行：
+实机使用独立的相机档案。验证首次接入时，从空档案用设备管理示例扫描并登记，再将 `$profilePath` 指向登记后的档案。依赖 Python、NumPy 和 Pillow。从当前目录运行以下命令。
 
 ```powershell
 python -B tools/validate_sdk_live_outputs.py --development-runtime --runtime x64/Release --registry $profilePath --output x64/validation/camera --all-modes --transitions --seconds 2

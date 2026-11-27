@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
     DeviceService::Identity identity;
     identity.endpoint.serial = QString(16, '1');
-    identity.pin = QString(64, '2');
+    identity.instance = QString(32, '2');
     auto rejected = [&] {
         try { DeviceService::Transport::credential(identity, false); }
         catch (const std::runtime_error &) { return true; }
@@ -30,12 +30,14 @@ int main(int argc, char **argv)
     };
     assert(rejected());
     const auto key = DeviceService::Transport::credential(identity, true);
-    assert(key.size() == 64);
+    assert(!key.isEmpty());
+    assert(DeviceService::Transport::hostPublicKey(key).size() == 65);
+    assert(DeviceService::Transport::signHostRequest(key, "challenge and request").size() == 64);
     assert(DeviceService::Transport::credential(identity, false) == key);
     assert(DeviceService::Transport::credential(identity, true) == key);
 
-    const auto directory = QDir(RuntimeDiscovery::managedConfigurationDirectory()).filePath("host-authorizations");
-    const auto file = QDir(directory).filePath(identity.endpoint.serial + '-' + identity.pin + ".key");
+    const auto directory = QDir(RuntimeDiscovery::managedConfigurationDirectory()).filePath("usb-host-authorizations");
+    const auto file = QDir(directory).filePath(identity.endpoint.serial + '-' + identity.instance + ".key");
     const auto path = QFile::encodeName(file);
     assert(chmod(path.constData(), 0644) == 0);
     assert(rejected());

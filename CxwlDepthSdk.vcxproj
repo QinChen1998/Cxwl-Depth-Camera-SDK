@@ -72,7 +72,6 @@
     <ClCompile Include="sdk\windows\CameraTransport.cpp"/>
     <ClInclude Include="sdk\windows\CameraTransport.h"/>
     <ClInclude Include="sdk\windows\DeviceService.h"/>
-    <ClInclude Include="sdk\windows\DeviceTrust.h"/>
     <ClInclude Include="sdk\DepthSdk.h"/>
     <ClInclude Include="sdk\DepthSdkExports.h"/>
     <ClInclude Include="sdk\DepthSdkQt.h"/>

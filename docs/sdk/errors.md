@@ -20,7 +20,7 @@
 | error_category | 典型含义 | 处理 |
 |---|---|---|
 | NONE (0) | 无会话错误 | 结合 state 和帧可用位判断 |
-| USB (1) | USB 网卡、设备证书核对或准备失败 | 检查 USB 数据线和设备管理器；运行诊断脚本；保存脱敏的 usb_error |
+| USB (1) | USB 网卡、设备序号或实例核对、准备失败 | 检查 USB 数据线和设备管理器，运行诊断脚本并保存脱敏的 usb_error |
 | BOARD_FILES (2) | 板端文件需要修复 | 先 Disconnect 至 OK，再 MaintainBoardFiles(BOARD_REPAIR)，等待维护结果后连接 |
 | CAPTURE (3) | 采集启动、视频或深度恢复失败 | 保存 GetStateAlloc 快照，确认网络和供电，再在空闲后 Reconnect |
 

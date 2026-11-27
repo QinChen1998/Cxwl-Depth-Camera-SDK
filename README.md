@@ -1,6 +1,6 @@
 # Cxwl Depth Camera SDK
 
-深度相机 SDK 3.0.0 支持 Windows x64、Linux x86-64 和 Linux ARM64。三平台共用 C ABI v3 和 C++17 封装。每个进程可采集一台相机，多个进程可按已登记身份分别选机。相机通过 USB 网卡连接 RV1103 设备服务预览版。六档深度均支持 RGB 视频、径向米制深度和板端同帧 XYZ。
+深度相机 SDK 3.0.0 支持 Windows x64、Linux x86-64 和 Linux ARM64。三平台共用 C ABI v3 和 C++17 封装。每个进程可采集一台相机，多个进程可按已登记身份分别选机。USB 直连构建与 RV1103 设备服务 `1.0.0-preview.2-usb-direct` 配套。六档深度均支持 RGB 视频、径向米制深度和板端同帧 XYZ。 [连接与迁移说明](docs/sdk/usb.md)
 
 ## Windows 本地构建
 

@@ -204,6 +204,26 @@ def run(dll_path, work):
         assert close_manager(manager) == 0
     print("PASS public device management, legacy registry, opaque IDs, callback and owner-thread rules, persistence")
 
+    usb_registry = json.loads(before)
+    for number, row in enumerate(usb_registry["devices"], start=1):
+        row["public_key"] = ""
+        row["service_instance"] = f"{number:032x}"
+    registry.write_text(json.dumps(usb_registry), encoding="utf-8")
+    assert open_manager(c.byref(options), None, None, c.byref(manager)) == 0
+    try:
+        devices = read(list_saved, manager)
+        usb_first, usb_second = [row["id"].encode("ascii") for row in devices]
+        assert usb_first != usb_second and usb_first != first and usb_second != second
+        assert use_saved(manager, usb_second) == 0
+        persisted = json.loads(registry.read_bytes())
+        assert persisted["active"] == "fixture-2"
+        assert [row["service_instance"] for row in persisted["devices"]] == [
+            row["service_instance"] for row in usb_registry["devices"]]
+        assert all(row["public_key"] == "" and "service_pin" not in row for row in persisted["devices"])
+    finally:
+        assert close_manager(manager) == 0
+    print("PASS USB direct registry, independent device IDs and certificate-free persistence")
+
     for removed in ("ProjectPointCloud", "GetCalibration", "StartRgbLscCalibration", "CheckRgbLsc"):
         assert not hasattr(dll, "CxwlDepth_" + removed)
     path = work / "点云 sample.ply"

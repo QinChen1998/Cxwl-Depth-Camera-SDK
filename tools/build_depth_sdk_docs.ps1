@@ -5,7 +5,7 @@ $project = Split-Path $PSScriptRoot -Parent
 if (!$OutputDirectory) { $OutputDirectory = Join-Path $project 'x64/validation/depth-sdk-doxygen' }
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 $product = Get-Content -LiteralPath (Join-Path $project 'sdk/product.json') -Raw | ConvertFrom-Json
-$edition = 'Windows 设备服务预览 · 1.0.0-preview.1'
+$edition = 'Windows USB 直连 · 1.0.0-preview.2-usb-direct'
 & (Join-Path $PSScriptRoot 'generate_sdk_version.ps1') -Check
 if (!$Doxygen) {
     $local = Join-Path $project 'x64/tools/doxygen-1.9.7/doxygen.exe'

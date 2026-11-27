@@ -26,8 +26,8 @@ $manifest = [ordered]@{
     product = $product.product
     abi_version = $product.abi_version
     platform = 'windows-x64'
-    channel = 'windows-device-service-preview'
-    device_service = '1.0.0-preview.1'
+    channel = 'windows-usb-direct-preview'
+    device_service = '1.0.0-preview.2-usb-direct'
     package_revision = 2
 }
 

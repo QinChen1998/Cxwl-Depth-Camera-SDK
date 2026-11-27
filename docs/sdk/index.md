@@ -1,8 +1,8 @@
-# RGBD 深度相机 SDK v3.0.0 · Windows 设备服务预览 {#sdk_home}
+# RGBD 深度相机 SDK v3.0.0 · USB 直连 {#sdk_home}
 
 Windows x64 C/C++ SDK，版本 3.0.0。应用通过同一会话获取 8×8、16×16 或 48×32 径向米制深度和 2304×1296 RGB8 视频。三种分辨率均提供普通和高精度档。
 
-本预览适用于预装设备服务 1.0.0-preview.1 并配备本机 F6 标定的相机。
+本构建适用于预装 `1.0.0-preview.2-usb-direct` 设备服务并配备本机 F6 标定的相机。
 
 C/C++ 使用同一个 DLL，调用方无需 Qt 开发环境。Qt Viewer 示例使用 Qt Widgets 绘制。
 

@@ -145,7 +145,7 @@ CxwlDepthImage rgbView(const QImage &image)
 QByteArray managedId(const RvDeviceProfile &device)
 {
     if (device.id.isEmpty()) return {};
-    return QCryptographicHash::hash(device.publicKey.toLatin1(), QCryptographicHash::Sha256).toHex();
+    return QCryptographicHash::hash(device.identity().toLatin1(), QCryptographicHash::Sha256).toHex();
 }
 
 QString managedStore()

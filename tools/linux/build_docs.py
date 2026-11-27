@@ -26,7 +26,7 @@ def build(args):
     product = json.loads((ROOT / "sdk/product.json").read_text(encoding="utf-8"))
     architecture = {"x64": ("Linux x86-64", "__x86_64__"), "arm64": ("Linux ARM64", "__aarch64__")}
     platform, macro = architecture[args.arch]
-    edition = "设备服务 1.0.0-preview.1"
+    edition = "USB 直连 · 1.0.0-preview.2-usb-direct"
     with tempfile.TemporaryDirectory() as folder:
         source = Path(folder)
         headers = source / "sdk"
