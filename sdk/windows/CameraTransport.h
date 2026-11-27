@@ -14,7 +14,8 @@ QByteArray hostPublicKey(const QByteArray &key);
 QByteArray signHostRequest(const QByteArray &key, const QByteArray &message);
 struct Channel {
     std::unique_ptr<QTcpSocket> socket;
-    QString serial, boot, instance;
+    Endpoint endpoint;
+    QString boot, instance;
     QByteArray preface;
 };
 Channel openChannel(const Endpoint &endpoint, const QString &instance = {}, const QString &boot = {});

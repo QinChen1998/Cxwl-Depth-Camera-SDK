@@ -18,6 +18,7 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QThread>
 #include <QtCore/QUuid>
 #include <QtCore/QtEndian>
 #include <QtNetwork/QNetworkProxy>
@@ -109,9 +110,9 @@ Channel openChannel(const Endpoint &e,const QString &instance,const QString &boo
     require(matched.hasMatch() && matched.captured(1)==e.serial,QStringLiteral("相机 USB 协议版本或序列号不匹配"));
     require(instance.isEmpty() || matched.captured(3)==instance,QStringLiteral("设备实例与登记记录不匹配，请通过 USB 重新连接并登记"));
     require(boot.isEmpty() || matched.captured(2)==boot,QStringLiteral("设备已重启，请重新连接"));
-    return {std::move(socket),e.serial,matched.captured(2),matched.captured(3),preface};
+    return {std::move(socket),e,matched.captured(2),matched.captured(3),preface};
 }
-QJsonObject exchange(Channel &channel,const QByteArray &op,const QByteArray &credential,const QList<QByteArray> &args,int ms) {
+static QJsonObject exchangeOnce(Channel &channel,const QByteArray &op,const QByteArray &credential,const QList<QByteArray> &args,int ms) {
     auto &s=*channel.socket;
     const auto id=QUuid::createUuid().toString(QUuid::Id128).toLatin1();
     require(!credential.isEmpty() || op=="HELLO",QStringLiteral("请先通过设备管理登记这台相机"));
@@ -135,11 +136,25 @@ QJsonObject exchange(Channel &channel,const QByteArray &op,const QByteArray &cre
     auto length=qFromBigEndian<quint32>(header.constData());
     require(length>0 && length<=128*1024,QStringLiteral("无效的服务回执长度"));
     auto doc=QJsonDocument::fromJson(take(s,length,deadline)).object();
-    require(doc["v"]==2 && doc["id"].toString().toLatin1()==id && doc["serial"]==channel.serial
+    require(doc["v"]==2 && doc["id"].toString().toLatin1()==id && doc["serial"]==channel.endpoint.serial
         && doc["boot"]==channel.boot && doc["instance"]==channel.instance && doc["body"].isObject(),
         QStringLiteral("设备服务回执身份不匹配"));
-    require(doc["code"]=="ok",doc["code"].toString()+": "+doc["body"].toObject()["error"].toString());
     return doc;
+}
+
+QJsonObject exchange(Channel &channel,const QByteArray &op,const QByteArray &credential,const QList<QByteArray> &args,int ms) {
+    for (int attempt=0;;++attempt) {
+        const auto doc=exchangeOnce(channel,op,credential,args,ms);
+        const auto code=doc["code"].toString();
+        const auto error=doc["body"].toObject()["error"].toString();
+        // This response is sent before the board executes the request.
+        if (code!="busy" || error!="Another camera operation is in progress" || attempt==3) {
+            require(code=="ok",code+": "+error);
+            return doc;
+        }
+        QThread::msleep(25*(attempt+1));
+        channel=openChannel(channel.endpoint,channel.instance,channel.boot);
+    }
 }
 #ifdef _WIN32
 namespace {

@@ -62,7 +62,7 @@ ready() {
 if ready; then exit 0; fi
 [ "$action" = configure ] || fail 10 'Configure IPv4 on the selected USB interface first.'
 [ "$(id -u)" = 0 ] || fail 10 'Use sudo for the configure command.'
-exec 9>/run/lock/cxwl-usb-network.lock
+exec 9>/run/cxwl-usb-network.lock
 flock 9
 still_attached || fail 11 'The USB attachment changed.'
 if ready; then exit 0; fi
