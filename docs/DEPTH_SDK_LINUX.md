@@ -1,10 +1,10 @@
 # Linux 深度相机 SDK 3.0.0
 
-适用于 Ubuntu 22.04 x86-64 和小端 ARM64，公开 C ABI v3 和 C++17 封装。应用从 ABI v1 或 v2 迁移时，按 `SDK/include/DepthSdk.h` 重新编译。RV1103 相机使用随完整镜像预装的 `1.0.0-preview.2-usb-direct` 服务。本机须有 RNDIS 驱动和系统 OpenSSL 3（Ubuntu 的 `libssl3`）。
+适用于 Ubuntu 22.04 x86-64 和小端 ARM64，公开 C ABI v3 和 C++17 封装。应用从 ABI v1 或 v2 迁移时，按 `SDK/include/DepthSdk.h` 重新编译。RV1103 相机使用随完整镜像预装的 `1.0.0-preview.3-usb-direct` 服务。本机须有 RNDIS 驱动，主机请求签名使用系统 OpenSSL 3（Ubuntu 的 `libssl3`）。
 
 ## 接入相机
 
-使用 USB 数据线连接相机，确认 Linux 枚举出了它的 USB 网卡。使用机身序列号核对该接口。SDK 将 TCP 连接绑定到该 USB 网卡，并核对相机回执中的序列号和设备实例标识。 [安全边界与档案迁移](sdk/usb.md)
+使用 USB 数据线连接一台相机，确认 Linux 枚举出了它的 USB 网卡。使用机身序列号核对该接口。SDK 将 CX2 TCP 8943 连接绑定到该 USB 网卡，并核对相机回执中的序列号和设备实例标识。 [安全边界与档案迁移](sdk/usb.md)
 
 ```bash
 read -r serial

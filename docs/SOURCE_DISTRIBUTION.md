@@ -4,7 +4,7 @@
 
 `private_build/windows-device-service` 留在本地开发环境。板端签名包构建使用 `make_board_package.py`，生成于 `x64/factory`。原始固定输入通过已有签名验证。更换板端服务后应在授权签发工位完成签名。私钥保存在项目外的签发库，设备登记档案与实测场景数据独立于源码。工位人员可在本地私有目录打开 `工位操作说明.md`。
 
-USB 直连测试镜像的签名载荷、制镜像源码和验收记录由本机工厂项目保存。固件完整性签名与客户首次 USB 登记分别处理。以下命令用于 `1.0.0-preview.1` 旧版工厂程序和回退测试，使用装有 cryptography、Tk 和 PyInstaller 6.16 的 Python。
+当前固定地址 USB 直连镜像、签名载荷、制镜像源码和验收记录由本机工厂项目保存。固件完整性签名与客户首次 USB 登记分别处理。以下命令仅用于归档的 `1.0.0-preview.1` 工厂程序，使用装有 cryptography、Tk 和 PyInstaller 6.16 的 Python。
 
 ```powershell
 $factoryPython = (Get-Command python).Source
@@ -33,7 +33,7 @@ $inputs = @{ BinaryDirectory = "$stage/desktop"; RuntimePayload = "$stage/payloa
 ./tools/package_depth_sdk.ps1 @inputs -OutputDirectory $trial -ExampleBuildDirectory "$work/examples-trial"
 ```
 
-打包脚本会从随包源码编译七个 C/C++ 示例和 Qt Viewer，并执行 SDK 自检和 ABI 回归。实机验收使用此次试制包的 DLL。将 `$profilePath` 指向授权使用的临时登记副本。两台相机并测时，在独立进程分别指定各自的档案和输出目录。使用随包 PointCloud 和 CppQuickStart 样例核对 PLY、深度图和点数。
+打包脚本会从随包源码编译七个 C/C++ 示例和 Qt Viewer，并执行 SDK 自检和 ABI 回归。用一台相机和此次试制包的 DLL 完成单机实测。将 `$profilePath` 指向授权使用的临时登记副本。使用随包 PointCloud 和 CppQuickStart 样例核对 PLY、深度图和点数。
 
 ```powershell
 python -B tools/validate_sdk_live_outputs.py --runtime "$trial/SDK/bin" --registry $profilePath --output "$work/camera" --all-modes --transitions --seconds 2

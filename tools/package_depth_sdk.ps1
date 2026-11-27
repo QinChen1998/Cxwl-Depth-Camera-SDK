@@ -27,9 +27,9 @@ $manifest = [ordered]@{
     abi_version = $product.abi_version
     platform = 'windows-x64'
     channel = 'windows-usb-direct-preview'
-    device_service = '1.0.0-preview.2-usb-direct'
+    device_service = '1.0.0-preview.3-usb-direct'
     usb_camera_ipv4 = '172.32.0.93'
-    package_revision = 3
+    package_revision = 4
 }
 
 $sdkBinaries = @('CxwlDepthSdk.dll', 'CxwlDepthSdkExample.exe')

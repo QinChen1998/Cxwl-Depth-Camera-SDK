@@ -1,6 +1,6 @@
 @page sdk_usb USB 接入与相机登记
 
-使用配套预装设备服务的 CXWL Depth Camera，通过可传数据的 USB 线接入上位机。相机固定使用 `172.32.0.93/16`，上位机的相机 USB 网卡使用同网段内另一个地址，例如 `172.32.0.100/16`。Windows 在设备管理器中确认 RNDIS 网卡已启用。网卡需要配置时，在 SDK 包根目录的管理员 PowerShell 中运行以下命令。
+使用 USB 数据线接入一台配套的 CXWL Depth Camera。固定地址版镜像在相机 USB 网卡上仅配置 `172.32.0.93/16`，USB 重新枚举后沿用该地址。上位机的相机 USB 网卡使用同网段内另一个地址，例如 `172.32.0.100/16`。Windows 在设备管理器中确认 RNDIS 网卡已启用。首次需要配置网卡时，在 SDK 包根目录的管理员 PowerShell 中运行以下命令。
 
 ```powershell
 .\Script\configure_cxwl_depth_camera_usb.ps1 -Serial (Read-Host '机身上的 16 位 USB 序号')
@@ -16,11 +16,13 @@ SDK 根据 USB 枚举序号、物理网卡和相机首次启动时生成的设�
 
 ## 传输安全与迁移
 
-把相机直接接到受控上位机的 USB 数据口。控制请求使用一次性挑战签名，板端核验主机公钥、操作权限及采集所有权。控制回执、RGB 和深度数据以明文 TCP 传输，能访问或篡改这条数据链路的一方可以观察或干预内容。设备识别依赖 USB 直连和标识核对，适用范围为受控的物理链路。工厂包签名使用独立的固件签名密钥。
+相机直接接入受控上位机的 USB 数据口。SDK 将 CX2 控制和媒体连接绑定到该 USB 网卡，访问 `172.32.0.93:8943`。控制请求使用一次性挑战签名，板端核验已登记的主机公钥、操作权限和采集所有权。控制回执、RGB 和深度数据以明文 TCP 传输。设备识别依赖 USB 直连和标识核对，适用范围为受控的物理链路。工厂包签名使用独立的固件签名密钥。
 
-USB 直连 SDK 与 `1.0.0-preview.2-usb-direct` 完整镜像配套，`1.0.0-preview.1` 和原 SDK 继续成对使用。两版的设备协议互不兼容。换用直连版或给同一台相机全擦后，在 Viewer 选择 USB 连接，或使用 SDK 的 `CXWL_DEPTH_CONNECT_PREPARE`。SDK 核对 USB 网卡和机身序号，再按新实例登记。相机名称和本地配置会沿用，重新登记完成后按列表返回的设备 ID 连接。`CXWL_DEPTH_CONNECT_SAVED_ONLY` 适用于已完成登记的实例。维护和校正权限按新主机登记标识重新授予。
+现行整板镜像预装 `1.0.0-preview.3-usb-direct`。它与 `1.0.0-preview.2-usb-direct` 使用同一个 CX2 协议，已有 USB 直连 SDK 可连接这两版服务。历史 `1.0.0-preview.1` 证书版使用原配 SDK。
 
-## 两台相机同时接入 Windows
+换用直连版或给同一台相机全擦后，在 Viewer 选择 USB 连接，或使用 SDK 的 `CXWL_DEPTH_CONNECT_PREPARE`。SDK 核对 USB 网卡和机身序号，再按新实例登记。相机名称和本地配置会沿用，重新登记完成后按列表返回的设备 ID 连接。`CXWL_DEPTH_CONNECT_SAVED_ONLY` 适用于已完成登记的实例。维护和校正权限按新主机登记标识重新授予。
+
+## 可选的多机选机
 
 两台相机可同时保持 USB 连接，每台仍使用 `172.32.0.93`。按各自的 USB 序号配置对应主机网卡，主机地址分别使用同网段内未占用的地址。首次登记时，在当前 PowerShell 窗口用 `$env:CXWL_DEPTH_USB_SERIAL = Read-Host '目标相机的 16 位机身序号'` 指定实物，用 DeviceManagement 的 `scan` 核对目标，再运行 `connect-usb`。依次登记两台，记录每台双流就绪时输出的 SDK 设备 ID。登记结束后在该窗口运行 `Remove-Item Env:CXWL_DEPTH_USB_SERIAL`。
 

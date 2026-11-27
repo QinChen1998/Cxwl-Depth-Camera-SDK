@@ -44,7 +44,7 @@ Get-ChildItem -LiteralPath $out
 
 1. C 程序调用 `CxwlDepth_Connect`，在会话所有者线程用 `CxwlDepth_WaitForEvent` 派发事件。深度与视频均收到后，调用 `CxwlDepth_Disconnect` 并处理 `BUSY`，直至释放句柄。 [C QuickStart](Example/c/QuickStart/QuickStart.c)
 2. C++17 程序使用 `cxwl::Session`，在回调中复制深度帧和板端 XYZ，回调结束后使用副本。 [C++ QuickStart](Example/cpp/QuickStart/CppQuickStart.cpp)
-3. 两台相机可同时插入 Windows。首次登记按机身序号核对实物，之后每个进程传入自己的 SDK 设备 ID。设备管理示例提供 `connect-usb` 和 `connect-saved ID` 两种命令。 [双机操作步骤](Example/README.md#在两台相机中选择目标)
+3. 用一台相机运行设备管理示例的 `scan` 和 `connect-usb` 验证首次接入。需要按 SDK 设备 ID 指定相机时，使用 `connect-saved ID`。 [可选双机选机](Example/README.md#在两台相机中选择目标)
 
 ## 约束与前置条件
 
@@ -52,7 +52,7 @@ Get-ChildItem -LiteralPath $out
 |---|---|
 | 系统与相机 | Windows x64，配套 CXWL SC3336 + TMF8829 相机。 [版本兼容矩阵与验收范围](Doc/api/Chinese/sdk_specifications.html#sdk_validation_scope) |
 | 会话与线程 | 单进程单采集会话；在创建句柄的线程调用；帧地址仅在回调期间有效。 |
-| 板端 | CXWL 相机预装 `1.0.0-preview.2-usb-direct` 设备服务并配备本机 F6 标定。旧固件使用原配 SDK。 |
+| 板端 | RV1103 固定地址镜像预装 `1.0.0-preview.3-usb-direct` 并配备本机 F6 标定。控制和媒体通过 CX2 TCP 8943 传输。 |
 | USB 与权限 | 数据线、稳定供电、相机 RNDIS 网卡；首次驱动安装与 USB 网络配置可能需要管理员权限。已配置设备日常采集使用普通用户。 |
 | 空间 | 建议预留 300 MiB，用于解压及更新临时副本；这是余量建议，不是包体积。实际文件与各档字节数见 [package-size.json](Doc/package-size.json)，构建／采集数据另计。 |
 

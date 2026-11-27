@@ -6,6 +6,10 @@
 
 Windows 使用 VS 2022 和固定的 Qt/MSBuild 归档，构建解决方案并运行 ABI、桌面回归和从暂存目录构建的随包样例。Linux 在两个架构上分别从已校验的源码构建 Qt 和 FFmpeg，运行 CTest、SDK ABI、JSON 和样例验证。CI 暂存目录用于离线消费端测试。发布所需的 RV1103 实机验收仍按下文在对应架构执行。
 
+## 单机接入验收
+
+每个平台接入一台 RV1103。相机 `usb0` 的 IPv4 地址应为 `172.32.0.93/16`，USB 重枚举后复核该地址。按机身序号配置主机 USB 网卡，在空档案下扫描、登记，取得 RGB 和深度，再停止采集并释放。发布验收继续用同一台相机执行下文的六档、切档和重连检查。两台相机的选机与并发采集为可选验证。
+
 ## Windows x64
 
 构建环境见 [项目首页](../README.md)。每次验收选用新的输出目录。正常构建后，使用下列命令验证 ABI 并构建带测试入口的桌面程序。
@@ -22,7 +26,7 @@ python -B tools/run_offline_tests.py --configuration Release --qt-root $env:CXWL
 python -B tools/validate_sdk_live_outputs.py --development-runtime --runtime x64/Release --registry $profilePath --output x64/validation/camera --all-modes --transitions --seconds 2
 ```
 
-实测检查视频、深度、同帧质量图、板端 XYZ、PLY 字节、六档切换和释放。两台相机使用各自的登记选择，在两个独立进程中采集。校正工具可用 `--check --serial <序列号> --device-store <档案>` 只读查询。
+实测检查视频、深度、同帧质量图、板端 XYZ、PLY 字节、六档切换和释放。校正工具可用 `--check --serial <序列号> --device-store <档案>` 只读查询。可选双机检查在两个独立进程中分别选择各自登记的相机。
 
 ## Linux x86-64 与 ARM64
 

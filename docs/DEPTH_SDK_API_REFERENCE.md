@@ -1,6 +1,6 @@
 # CXWL Depth Camera SDK API 参考
 
-SDK v3.0.0 (3.0.0) / ABI v3 · Windows x64 C/C++ · Windows USB 直连 · 1.0.0-preview.2-usb-direct。46 个公开函数。
+SDK v3.0.0 (3.0.0) / ABI v3 · Windows x64 C/C++ · Windows USB 直连 · 1.0.0-preview.3-usb-direct。46 个公开函数。
 
 相关的数值、配置和函数指针见 [枚举值](#枚举值)、[宏定义](#宏定义)和[回调类型](#回调类型)。
 
@@ -1487,7 +1487,7 @@ cleanup:
 | 普通模式 / Standard depth mode | 选用对应分辨率的默认测距预设。 |
 | 高精度模式 / High accuracy depth mode | 选用对应分辨率的近距高精度预设。 |
 | 启动器 / Launcher | Windows 包在 `Example/bin` 提供示例启动器。 |
-| 运行依赖 / Runtime dependencies | Windows 三种部署档位包含 SDK、TLS 及各档所需的图像或视频运行库。 |
+| 运行依赖 / Runtime dependencies | 随包运行库包括 SDK、Qt 网络组件和对应部署档位的图像及视频库。 |
 | 径向距离 / Radial distance | 从 ToF 传感器沿该像素射线到目标的距离，单位米；不等同于光轴 Z。 |
 | F6 标定 / Calibration preset F6 | 六档共用的配套相机几何与视场校正方案代号。 |
 | `dtof_fov_correction` | 诊断元数据中的 ToF 视场校正选择值；本产品为 6，对应 F6。应用无需自行传板端参数。 |
@@ -1496,6 +1496,7 @@ cleanup:
 | 原视频 / Camera video | 板端发送 H.265，SDK 主机解码为 RGB8；与深度为独立数据流。 |
 
 | RNDIS / Remote Network Driver Interface Specification | Windows 主机通过 USB 网卡与相机通信的接口。 |
+| CX2 | 相机 USB 网卡上的控制与媒体传输协议，端点为 `172.32.0.93:8943/TCP`。 |
 | dToF / direct time of flight | 直接飞行时间测距。TMF8829 是相机的 dToF 传感器。 |
 | RV1103、SC3336 | RV1103 为板端处理器，SC3336 为可见光图像传感器。 |
 | LSG2 | SDK 与板端交换原生测量数据的协议标识。 |
@@ -1598,7 +1599,7 @@ SDK 从相机接收 ToF 坐标系的 XYZ。将点云投到 RGB 像素还需要�
 |---|---|
 | 产品 | RGBD 深度相机 |
 | SDK | Windows 3.0.0 开发版（ABI v3） |
-| 本地预览 | Windows x64，设备服务 1.0.0-preview.2-usb-direct。 |
+| 相机服务 | RV1103 固定地址完整镜像预装 `1.0.0-preview.3-usb-direct`。 |
 
 
 ### 原生深度档位与测距范围
@@ -1621,10 +1622,10 @@ SDK 从相机接收 ToF 坐标系的 XYZ。将点云投到 RGB 像素还需要�
 
 | 主机与接口 | 相机与验证范围 |
 |---|---|
-| Windows x64，SDK 3.0.0，ABI v3 | RV1103 设备服务 1.0.0-preview.2-usb-direct，SC3336 与 TMF8829 F6。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
-| Linux x64 与 ARM64 | 这两个平台的设备服务客户端待适配。 |
+| Windows x64，SDK 3.0.0，ABI v3 | RV1103 通过 CX2 USB 直连。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
+| Linux x86-64 与 Linux ARM64，SDK 3.0.0，ABI v3 | 使用相同的 CX2 协议和六档 C/C++ 接口。查阅对应架构的离线与单机实测回执。 |
 
-实机验收比较导出 PLY 与相机传回的同帧 XYZ，并检查有效深度、视频和会话释放。表中的标称测距指标来自传感器数据手册。
+实机验收使用一台相机，比较导出 PLY 与相机传回的同帧 XYZ，并检查有效深度、视频和会话释放。表中的标称测距指标来自传感器数据手册。
 
 ### 普通 48×32 模式的典型有效探测距离
 
@@ -2259,7 +2260,7 @@ Integration 目录提供 vcpkg overlay 与 Conan 2 本地配方；均读取本�
 
 ## USB 接入与相机登记
 
-使用配套预装设备服务的 CXWL Depth Camera，通过可传数据的 USB 线接入上位机。相机固定使用 `172.32.0.93/16`，上位机的相机 USB 网卡使用同网段内另一个地址，例如 `172.32.0.100/16`。Windows 在设备管理器中确认 RNDIS 网卡已启用。网卡需要配置时，在 SDK 包根目录的管理员 PowerShell 中运行以下命令。
+使用 USB 数据线接入一台配套的 CXWL Depth Camera。固定地址版镜像在相机 USB 网卡上仅配置 `172.32.0.93/16`，USB 重新枚举后沿用该地址。上位机的相机 USB 网卡使用同网段内另一个地址，例如 `172.32.0.100/16`。Windows 在设备管理器中确认 RNDIS 网卡已启用。首次需要配置网卡时，在 SDK 包根目录的管理员 PowerShell 中运行以下命令。
 
 ```powershell
 .\Script\configure_cxwl_depth_camera_usb.ps1 -Serial (Read-Host '机身上的 16 位 USB 序号')
@@ -2275,11 +2276,13 @@ SDK 根据 USB 枚举序号、物理网卡和相机首次启动时生成的设�
 
 ### 传输安全与迁移
 
-把相机直接接到受控上位机的 USB 数据口。控制请求使用一次性挑战签名，板端核验主机公钥、操作权限及采集所有权。控制回执、RGB 和深度数据以明文 TCP 传输，能访问或篡改这条数据链路的一方可以观察或干预内容。设备识别依赖 USB 直连和标识核对，适用范围为受控的物理链路。工厂包签名使用独立的固件签名密钥。
+相机直接接入受控上位机的 USB 数据口。SDK 将 CX2 控制和媒体连接绑定到该 USB 网卡，访问 `172.32.0.93:8943`。控制请求使用一次性挑战签名，板端核验已登记的主机公钥、操作权限和采集所有权。控制回执、RGB 和深度数据以明文 TCP 传输。设备识别依赖 USB 直连和标识核对，适用范围为受控的物理链路。工厂包签名使用独立的固件签名密钥。
 
-USB 直连 SDK 与 `1.0.0-preview.2-usb-direct` 完整镜像配套，`1.0.0-preview.1` 和原 SDK 继续成对使用。两版的设备协议互不兼容。换用直连版或给同一台相机全擦后，在 Viewer 选择 USB 连接，或使用 SDK 的 `CXWL_DEPTH_CONNECT_PREPARE`。SDK 核对 USB 网卡和机身序号，再按新实例登记。相机名称和本地配置会沿用，重新登记完成后按列表返回的设备 ID 连接。`CXWL_DEPTH_CONNECT_SAVED_ONLY` 适用于已完成登记的实例。维护和校正权限按新主机登记标识重新授予。
+现行整板镜像预装 `1.0.0-preview.3-usb-direct`。它与 `1.0.0-preview.2-usb-direct` 使用同一个 CX2 协议，已有 USB 直连 SDK 可连接这两版服务。历史 `1.0.0-preview.1` 证书版使用原配 SDK。
 
-### 两台相机同时接入 Windows
+换用直连版或给同一台相机全擦后，在 Viewer 选择 USB 连接，或使用 SDK 的 `CXWL_DEPTH_CONNECT_PREPARE`。SDK 核对 USB 网卡和机身序号，再按新实例登记。相机名称和本地配置会沿用，重新登记完成后按列表返回的设备 ID 连接。`CXWL_DEPTH_CONNECT_SAVED_ONLY` 适用于已完成登记的实例。维护和校正权限按新主机登记标识重新授予。
+
+### 可选的多机选机
 
 两台相机可同时保持 USB 连接，每台仍使用 `172.32.0.93`。按各自的 USB 序号配置对应主机网卡，主机地址分别使用同网段内未占用的地址。首次登记时，在当前 PowerShell 窗口用 `$env:CXWL_DEPTH_USB_SERIAL = Read-Host '目标相机的 16 位机身序号'` 指定实物，用 DeviceManagement 的 `scan` 核对目标，再运行 `connect-usb`。依次登记两台，记录每台双流就绪时输出的 SDK 设备 ID。登记结束后在该窗口运行 `Remove-Item Env:CXWL_DEPTH_USB_SERIAL`。
 

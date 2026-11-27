@@ -1,6 +1,6 @@
 # CXWL Depth Camera SDK 3.0.0 开发版 · Windows x64
 
-本地 USB 直连构建使用 SDK 3.0.0、ABI v3，配套预装 `1.0.0-preview.2-usb-direct` 服务的相机。
+本地 USB 直连构建使用 SDK 3.0.0、ABI v3，配套预装 `1.0.0-preview.3-usb-direct` 服务的相机。SDK 经 USB RNDIS 网卡使用 CX2 TCP 8943。
 
 C/C++ 共用一个 DLL、导入库和 ABI v3。C++ 可使用 DepthSdk.hpp 的辅助类型。SDK 3.0.0 提供 46 个公开函数以及 8×8、16×16、48×32 米制深度和原视频回调。每个进程使用一个采集会话。调用 `CxwlDepth_Connect` 或 `CxwlDepth_SetMode` 时传入相应 SDK 模式常量。 [六档模式值与厂商测距范围](sdk/specifications.md#原生深度档位与测距范围) · [API 参考](DEPTH_SDK_API_REFERENCE.md)
 
@@ -20,7 +20,7 @@ C/C++ 共用一个 DLL、导入库和 ABI v3。C++ 可使用 DepthSdk.hpp 的辅
 
 设备连接信息由 SDK 在当前 Windows 用户目录下管理。安装版上位机与 SDK 共用该用户的登记记录和 Windows 凭据管理器。首次 USB 接入需要 Windows 识别相机的 RNDIS 网卡。相机固定使用 `172.32.0.93/16`。初次配置网卡时，在 SDK 包根目录的管理员 PowerShell 中运行 `./Script/configure_cxwl_depth_camera_usb.ps1 -Serial (Read-Host '机身上的 16 位 USB 序号')`，为指定相机的主机 USB 网卡配置同网段地址。已有有效地址时直接连接。
 
-两台相机可以同时插在 Windows 上。首次登记按机身序号核对目标，之后使用设备管理示例的 `connect-saved ID` 连接指定相机。两个进程各传一个不同的登记 ID 可并行采集。 [双机登记与按 ID 选机](sdk/usb.md)
+接入一台相机即可完成常规验证。需要按登记 ID 选机时，使用设备管理示例的 `connect-saved ID`。 [USB 登记与选机](sdk/usb.md)
 
 可选的状态回调报告状态变化和帧失效。对 `CxwlDepth_Connect` 返回的会话调用 `CxwlDepth_GetState`，可读取 `connecting`、`connected`、`reconnecting`、`error` 或 `disconnecting`。收到 `error` 时，通过 `error` 字段区分 USB 准备失败（`usb_setup_failed`）、板端文件待修复（`board_files_required`）或采集失败（`capture_failed`）。USB 准备或板端文件失败时可检查 USB 连接后重试。状态 JSON 长度包含结尾的 NUL，可先传空缓冲区获取所需长度。
 

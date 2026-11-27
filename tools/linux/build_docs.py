@@ -26,7 +26,7 @@ def build(args):
     product = json.loads((ROOT / "sdk/product.json").read_text(encoding="utf-8"))
     architecture = {"x64": ("Linux x86-64", "__x86_64__"), "arm64": ("Linux ARM64", "__aarch64__")}
     platform, macro = architecture[args.arch]
-    edition = "USB 直连 · 1.0.0-preview.2-usb-direct"
+    edition = "USB 直连 · 1.0.0-preview.3-usb-direct"
     with tempfile.TemporaryDirectory() as folder:
         source = Path(folder)
         headers = source / "sdk"
@@ -54,10 +54,8 @@ def build(args):
         for name in ("terminology", "specifications", "lifecycle", "json"):
             path = pages / (name + ".md")
             text = path.read_text(encoding="utf-8").replace("Windows 3.0.0 开发版", "SDK 3.0.0")
-            text = text.replace("当前 Windows 用户", "当前 Linux 用户").replace("Windows x64", platform)
+            text = text.replace("当前 Windows 用户", "当前 Linux 用户")
             text = text.replace("Windows 包在 `Example/bin` 提供示例启动器。", "Linux 包在 `Example/bin` 提供可执行样例。")
-            text = text.replace("Windows 三种部署档位包含 SDK、TLS 及各档所需的图像或视频运行库。",
-                                "Linux 的 STANDARD 部署包含 SDK、TLS 插件和图像或视频运行库。")
             path.write_text(text, encoding="utf-8")
 
         config = (ROOT / "tools/depth_sdk_docs/Doxyfile").read_text(encoding="utf-8")
