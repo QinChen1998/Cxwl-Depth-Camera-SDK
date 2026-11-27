@@ -106,7 +106,7 @@ Channel openChannel(const Endpoint &e,const QString &instance,const QString &boo
         "\\ACX2 ([0-9a-f]{16}) ([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}) ([0-9a-f]{32}) [0-9a-f]{32}\\n\\z"));
     const auto matched=pattern.match(QString::fromLatin1(preface));
     require(matched.hasMatch() && matched.captured(1)==e.serial,QStringLiteral("相机 USB 协议版本或序列号不匹配"));
-    require(instance.isEmpty() || matched.captured(3)==instance,QStringLiteral("设备实例与登记记录不匹配，请核验实物并重新登记"));
+    require(instance.isEmpty() || matched.captured(3)==instance,QStringLiteral("设备实例与登记记录不匹配，请通过 USB 重新连接并登记"));
     require(boot.isEmpty() || matched.captured(2)==boot,QStringLiteral("设备已重启，请重新连接"));
     return {std::move(socket),e.serial,matched.captured(2),matched.captured(3),preface};
 }
@@ -222,9 +222,9 @@ QJsonObject request(const Identity &i,const QByteArray &secret,const QByteArray 
     return exchange(channel,op,secret,args,ms)["body"].toObject();
 }
 Identity verified(const RvDeviceProfile &device) {
-    require(!device.serviceInstance.isEmpty(),QStringLiteral("旧版设备档案需要重新登记，或使用原版 SDK 与固件"));
+    require(!device.serviceInstance.isEmpty(),QStringLiteral("请通过 USB 连接以迁移旧版设备档案"));
     auto i=inspect(device.serial);
-    require(i.instance==device.serviceInstance,QStringLiteral("设备实例与登记记录不匹配，请核验实物并重新登记"));
+    require(i.instance==device.serviceInstance,QStringLiteral("设备实例与登记记录不匹配，请通过 USB 重新连接并登记"));
     return i;
 }
 Transfer transfer(const Identity &i,const QByteArray &secret,const QByteArray &op,const QList<QByteArray> &args) {

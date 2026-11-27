@@ -48,10 +48,10 @@ RvDeviceProfile profile(const Identity &i,const QVector<RvDeviceProfile> &known)
     RvDeviceProfile result;result.serial=i.endpoint.serial;result.id=result.serial;result.name=result.defaultName();
     for(auto &p:known) {
         if(p.serial!=result.serial) continue;
-        require(p.serviceInstance==i.instance,
-                QStringLiteral("设备实例与原档案不同。请核对实物，移除原登记并重新登记。"));
         result=p;break;
     }
+    result.publicKey.clear();
+    result.servicePin.clear();
     result.serviceInstance=i.instance;result.host=i.endpoint.remote.toString();result.validate();
     return result;
 }
