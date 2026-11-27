@@ -37,9 +37,13 @@ def build(args):
         shutil.copytree(ROOT / "docs/sdk", pages)
         linux = (ROOT / "docs/DEPTH_SDK_LINUX.md").read_text(encoding="utf-8")
         section = {part.partition("\n")[0]: part.partition("\n")[2].strip() for part in linux.split("\n## ")[1:]}
+        migration_heading = "## 传输安全与迁移"
+        usb_guide = (pages / "usb.md").read_text(encoding="utf-8")
+        migration = usb_guide.split(migration_heading, 1)[1].split("\n## ", 1)[0].strip()
+        linux_usb = section["接入相机"].replace(" [安全边界与档案迁移](sdk/usb.md)", "")
         supplements = {
             "index": "# Linux 深度相机 SDK\n\n使用 C ABI v3 连接预装设备服务的 RV1103 相机。\n\n@ref sdk_usb\n\n@ref sdk_build\n\n@ref sdk_lifecycle\n",
-            "usb": "@page sdk_usb USB 登记、网络与凭据\n\n" + section["接入相机"],
+            "usb": f"@page sdk_usb USB 登记、网络与凭据\n\n{linux_usb}\n\n{migration_heading}\n\n{migration}",
             "build": "@page sdk_build Linux 构建和部署\n\n" + section["构建客户应用与样例"] + "\n\n" + section["校验交付"],
             "examples": "@page sdk_examples C/C++ 示例\n\n" + section["构建客户应用与样例"],
             "errors": "@page sdk_errors 状态与故障处理\n\n通过 `CxwlDepth_GetSessionStatus` 和 `CxwlDepth_GetStateAlloc` 查询采集状态。在同一所有者线程派发事件，等待停采回执后释放会话。连接失败时检查 USB 网卡、相机登记和设备服务版本。\n\n@ref sdk_usb\n",
