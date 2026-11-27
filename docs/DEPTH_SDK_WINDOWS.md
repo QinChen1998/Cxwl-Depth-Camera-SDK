@@ -6,6 +6,8 @@ C/C++ 共用一个 DLL、导入库和 ABI v3。C++ 可使用 DepthSdk.hpp 的辅
 
 ## 连接与断开
 
+重新插入相机后，Windows 有时会先列出仍在执行重复地址检测的 RNDIS IPv4 地址。若此时无法绑定该地址，SDK 会在本次连接内等候最多 5 秒，待同一接口的地址可用后继续连接。
+
 首次接入或快速验证可使用 `CxwlDepth_Connect`。应用需要指定设备或连接策略时使用 `CxwlDepth_ConnectWithOptions`。需要先配置会话、等待操作员或业务流程启动采集时使用 `CxwlDepth_Open`。[三种方式的使用场景与调用顺序](DEPTH_SDK_API_REFERENCE.md#选择连接方式)
 
 ### 使用默认方式连接

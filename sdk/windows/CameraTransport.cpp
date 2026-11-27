@@ -78,6 +78,20 @@ void bindInterface(QTcpSocket &socket,const Endpoint &endpoint) {
     require(setsockopt(SOCKET(socket.socketDescriptor()),IPPROTO_IP,IP_UNICAST_IF,
                        reinterpret_cast<const char*>(&index),sizeof(index))==0,QStringLiteral("USB 网卡已变化"));
 }
+
+static bool waitForUsbAddress(const Endpoint &endpoint) {
+    MIB_UNICASTIPADDRESS_ROW address{};
+    address.InterfaceIndex=endpoint.index;
+    address.Address.Ipv4.sin_family=AF_INET;
+    address.Address.Ipv4.sin_addr.s_addr=htonl(endpoint.local.toIPv4Address());
+    QDeadlineTimer deadline(5000);
+    while(GetUnicastIpAddressEntry(&address)==NO_ERROR) {
+        if(address.DadState==IpDadStatePreferred || address.DadState==IpDadStateDeprecated) return true;
+        if(address.DadState!=IpDadStateTentative || deadline.hasExpired()) break;
+        QThread::msleep(50);
+    }
+    return false;
+}
 #endif
 QByteArray take(QTcpSocket &s,int count,QDeadlineTimer &deadline) {
     QByteArray bytes;
@@ -94,7 +108,13 @@ Channel openChannel(const Endpoint &e,const QString &instance,const QString &boo
     require(qEnvironmentVariable("RV_TEST_OFFLINE_ONLY")!="1",QStringLiteral("离线测试禁止连接相机"));
     auto socket=std::make_unique<QTcpSocket>();
     socket->setProxy(QNetworkProxy::NoProxy);
-    require(socket->bind(e.local),QStringLiteral("无法绑定已核验的 USB 网卡"));
+    bool bound=socket->bind(e.local);
+#ifdef _WIN32
+    // Windows can enumerate the RNDIS address while duplicate-address detection still prevents bind.
+    if(!bound && socket->error()==QAbstractSocket::SocketAddressNotAvailableError && waitForUsbAddress(e))
+        bound=socket->bind(e.local);
+#endif
+    require(bound,QStringLiteral("无法绑定已核验的 USB 网卡"));
     bindInterface(*socket,e);
     socket->connectToHost(e.remote,8943);
     const auto incompatible=QStringLiteral("相机 USB 直连接口未就绪。请检查数据线及 SDK 与固件的配套版本。");

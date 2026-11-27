@@ -70,5 +70,12 @@ if(BUILD_TESTING)
     target_compile_options(cxwl_linux_credentials_tests PRIVATE -UNDEBUG)
     target_link_libraries(cxwl_linux_credentials_tests PRIVATE Qt6::Core Qt6::Network OpenSSL::Crypto)
     add_test(NAME linux_service_credentials COMMAND cxwl_linux_credentials_tests)
-    set_tests_properties(cpp_helpers linux_service_credentials PROPERTIES ENVIRONMENT "RV_TEST_OFFLINE_ONLY=1")
+
+    add_executable(cxwl_board_stream_freshness_tests tests/BoardStreamFreshnessTests.cpp
+        sensors/RvDtofBoardStream.cpp sensors/RvDtofCandidates.cpp)
+    target_compile_features(cxwl_board_stream_freshness_tests PRIVATE cxx_std_17)
+    target_include_directories(cxwl_board_stream_freshness_tests PRIVATE sdk)
+    target_link_libraries(cxwl_board_stream_freshness_tests PRIVATE Qt6::Core Qt6::Network Qt6::Concurrent)
+    add_test(NAME board_stream_freshness COMMAND cxwl_board_stream_freshness_tests)
+    set_tests_properties(cpp_helpers linux_service_credentials board_stream_freshness PROPERTIES ENVIRONMENT "RV_TEST_OFFLINE_ONLY=1")
 endif()

@@ -63,7 +63,8 @@ void RvDtofBoardStream::ask(){
     qToLittleEndian<quint32>(++request,bytes.data()+4);
     if(expected["point_cloud_format"]==PointCloudFormat)
         qToLittleEndian<quint32>(RequestOrganizedXyz,bytes.data()+8);
-    qToLittleEndian<quint64>(identities.rawSequence,bytes.data()+16);
+    // LSG2 uses a zero cursor to return the newest sample in the board's queue.
+    qToLittleEndian<quint64>(requestNewest ? 0 : identities.rawSequence,bytes.data()+16);
     pending=true;roundtrip.restart();timeout.start(3000);socket.write(bytes);
 }
 void RvDtofBoardStream::read(){
@@ -82,12 +83,12 @@ void RvDtofBoardStream::read(){
     const auto total=HeaderBytes+jsonSize+rawSize+xyzSize;if(buffer.size()<total)return;
     if(buffer.size()!=total){fail(tr("Unexpected candidate stream payload"));return;}
     decoding=true;auto packet=std::move(buffer);buffer.clear();
-    watcher.setFuture(QtConcurrent::run(decodePool,[state=decoder,packet=std::move(packet),receipt=expected,previous=identities,id=request]{
-        return decode(state,packet,receipt,previous,id);
+    watcher.setFuture(QtConcurrent::run(decodePool,[state=decoder,packet=std::move(packet),receipt=expected,previous=identities,id=request,newest=requestNewest]{
+        return decode(state,packet,receipt,previous,id,newest);
     }));
 }
 RvDtofBoardStream::Decoded RvDtofBoardStream::decode(const std::shared_ptr<Decoder>& decoder,
-    const QByteArray& buffer,const QJsonObject& expected,Identities previous,quint32 request){
+    const QByteArray& buffer,const QJsonObject& expected,Identities previous,quint32 request,bool requestedNewest){
     Decoded out;out.request=request;out.identities=previous;if(decoder->cancelled.load())return out;
     const auto reject=[&](const QString& message){out.error=message;return out;};
     const auto u=[&](int off){return qFromLittleEndian<quint32>(buffer.constData()+off);};
@@ -116,11 +117,14 @@ RvDtofBoardStream::Decoded RvDtofBoardStream::decode(const std::shared_ptr<Decod
     if(rawSize){
         bool seqOk=false,stampOk=false;const auto seq=m["raw_sequence"].toString().toULongLong(&seqOk),stamp=m["raw_timestamp_ns"].toString().toULongLong(&stampOk);
         out.rawAge=m["raw_age_ms"].toDouble(-1);
-        if(!seqOk||!stampOk||seq<=last.rawSequence||stamp<=last.rawCapture||seq>9007199254740991ULL||stamp>9007199254740991ULL
+        const bool repeated=requestedNewest && last.rawSequence && seq==last.rawSequence && stamp==last.rawCapture;
+        if(!seqOk||!stampOk||(!repeated&&(seq<=last.rawSequence||stamp<=last.rawCapture))||seq>9007199254740991ULL||stamp>9007199254740991ULL
             ||!std::isfinite(out.rawAge)||out.rawAge<0||m["raw_fov_correction"]!=expectedFov||m["raw_columns"]!=grid.width()||m["raw_rows"]!=grid.height()
             ||!m["tof_warning_flags"].isDouble()||m["tof_warning_flags"].toDouble()!=m["tof_warning_flags"].toInteger(-1)
             ||(quint64(m["tof_warning_flags"].toInteger(-1))&~quint64(0x18))!=0)
             return reject(tr("Invalid candidate measurement identity"));
+        // A newest read can return the last seen sample. It cannot refresh depth.
+        out.rawPresent=!repeated;
         out.identities.rawSequence=seq;out.identities.rawCapture=stamp;
         out.native=nativeMeasurement(buffer.mid(HeaderBytes+jsonSize,rawSize),m,grid,seq,stamp,expectedFov);
         if(u(20)){
@@ -147,6 +151,7 @@ void RvDtofBoardStream::finish(){
     try{out=watcher.result();}catch(...){fail(tr("Invalid candidate stream header"));return;}
     if(out.request!=request){fail(tr("Candidate identity or parameters mismatch"));return;}
     if(!out.error.isEmpty()){fail(out.error);return;}
+    requestNewest=false;
     const double videoAge=out.videoAge+roundtrip.nsecsElapsed()/1e6;
     // Drop the whole late packet without advancing accepted identities.
     if(videoAge>=1000){decoding=false;pending=false;timeout.stop();return;}
@@ -160,7 +165,14 @@ void RvDtofBoardStream::finish(){
         out.native.metadata["raw_request_roundtrip_ms"]=requestMs;
         const auto hostNs=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         out.native.metadata["raw_host_dispatch_ns"]=QString::number(hostNs);
-        if(age<220){progress.restart();if(rawFrame){const auto callback=rawFrame;callback(out.native);}}}
+        if(age<220){
+            progress.restart();
+            if(rawFrame){const auto callback=rawFrame;callback(out.native);}
+        }else if(expected["point_cloud_format"]==PointCloudFormat){
+            // Skip queued measurements after a late reply, then resume ordered reads.
+            requestNewest=true;
+        }
+    }
     if(!alive())return;decoding=false;pending=false;timeout.stop();
     if(expected["point_cloud_format"]==PointCloudFormat)ask();
 }
