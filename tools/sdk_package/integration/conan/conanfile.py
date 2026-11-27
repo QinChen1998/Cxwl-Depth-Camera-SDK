@@ -8,7 +8,7 @@ from conan.tools.scm import Version
 
 class CxwlDepthSdk(ConanFile):
     name = "cxwl-depth-sdk"
-    version = "3.0.0"
+    version = "3.1.0"
     package_type = "shared-library"
     license = "LicenseRef-CXWL-Product"
     settings = "os", "arch", "compiler", "build_type"

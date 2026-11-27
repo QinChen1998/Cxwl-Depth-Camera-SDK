@@ -1,6 +1,6 @@
 # CXWL Depth Camera SDK API 参考
 
-SDK v3.0.0 (3.0.0) / ABI v3 · Windows x64 C/C++ · Windows USB 直连 · 1.0.0-preview.3-usb-direct。46 个公开函数。
+SDK v3.1.0 (3.1.0) / ABI v3 · Windows x64 C/C++ · Windows USB 直连 · 1.0.0-preview.3-usb-direct。46 个公开函数。
 
 相关的数值、配置和函数指针见 [枚举值](#枚举值)、[宏定义](#宏定义)和[回调类型](#回调类型)。
 
@@ -76,7 +76,7 @@ Subscribe 提供图像帧，SubscribeEx 还提供深度帧对应的 SNR 和有�
 
 ## ABI v3 迁移
 
-Windows 3.0.0 开发版需要重新编译使用 ABI v2 的客户程序。CxwlDepthCapabilities 的模式数组扩为六项，结构为 72 字节。先比较 CxwlDepth_AbiVersion() 与头文件宏，再创建句柄。RGB 校正改用独立工具。需要点云时，在深度回调中使用 CxwlDepth_GetFramePointCloud，跨回调使用前复制 XYZ。查询板端标定版本使用 CxwlDepth_GetDeviceInfo。
+从 ABI v2 迁移到 ABI v3 时，需要用本版头文件重新编译客户程序。CxwlDepthCapabilities 的模式数组扩为六项，结构为 72 字节。先比较 CxwlDepth_AbiVersion() 与头文件宏，再创建句柄。RGB 校正改用独立工具。需要点云时，在深度回调中使用 CxwlDepth_GetFramePointCloud，跨回调使用前复制 XYZ。查询板端标定版本使用 CxwlDepth_GetDeviceInfo。
 
 ## 结构体索引
 
@@ -1266,15 +1266,15 @@ SDK 的语义版本、ABI 版本和编译时间。
 | `CXWL_DEPTH_CALL` | `__cdecl` | 指定 SDK 函数和回调的调用约定。定义回调函数时，将此宏放在函数名之前，例如 void CXWL_DEPTH_CALL on_event(...)。 |
 | `CXWL_DEPTH_WIDTH` | `48u` | ToF 深度图的宽度，单位为像素。也用于标称射线和点云的网格列数。 |
 | `CXWL_DEPTH_HEIGHT` | `32u` | ToF 深度图的高度，单位为像素。也用于标称射线和点云的网格行数。 |
-| `CXWL_DEPTH_VERSION` | `"3.0.0"` | SDK 语义版本字符串。 |
+| `CXWL_DEPTH_VERSION` | `"3.1.0"` | SDK 语义版本字符串。 |
 | `CXWL_DEPTH_VERSION_MAJOR` | `3` | SDK 主版本号。 |
-| `CXWL_DEPTH_VERSION_MINOR` | `0` | SDK 次版本号。 |
+| `CXWL_DEPTH_VERSION_MINOR` | `1` | SDK 次版本号。 |
 | `CXWL_DEPTH_VERSION_PATCH` | `0` | SDK 修订版本号。 |
 | `CXWL_DEPTH_ABI_VERSION` | `3u` | 当前 C 接口的 ABI 版本。首次创建句柄前与 CxwlDepth_AbiVersion() 比较。 |
-| `CXWL_DEPTH_FILE_VERSION` | `3,0,0,0` |  |
-| `CXWL_DEPTH_FILE_VERSION_STRING` | `"3.0.0.0"` |  |
+| `CXWL_DEPTH_FILE_VERSION` | `3,1,0,0` |  |
+| `CXWL_DEPTH_FILE_VERSION_STRING` | `"3.1.0.0"` |  |
 | `CXWL_DEPTH_PRODUCT_NAME` | `"RGBD 深度相机"` |  |
-| `CXWL_DEPTH_RELEASE_DATE` | `"2026-11-26"` |  |
+| `CXWL_DEPTH_RELEASE_DATE` | `"2026-11-27"` |  |
 | `CXWL_DEPTH_COPYRIGHT` | `"Copyright (C) 2026 RGBD Depth Camera SDK authors"` |  |
 
 ## 回调类型
@@ -1598,7 +1598,7 @@ SDK 从相机接收 ToF 坐标系的 XYZ。将点云投到 RGB 像素还需要�
 | 项目 | 内容 |
 |---|---|
 | 产品 | RGBD 深度相机 |
-| SDK | Windows 3.0.0 开发版（ABI v3） |
+| SDK | 3.1.0（ABI v3） |
 | 相机服务 | RV1103 固定地址完整镜像预装 `1.0.0-preview.3-usb-direct`。 |
 
 
@@ -1622,8 +1622,8 @@ SDK 从相机接收 ToF 坐标系的 XYZ。将点云投到 RGB 像素还需要�
 
 | 主机与接口 | 相机与验证范围 |
 |---|---|
-| Windows x64，SDK 3.0.0，ABI v3 | RV1103 通过 CX2 USB 直连。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
-| Linux x86-64 与 Linux ARM64，SDK 3.0.0，ABI v3 | 使用相同的 CX2 协议和六档 C/C++ 接口。查阅对应架构的离线与单机实测回执。 |
+| Windows x64，SDK 3.1.0，ABI v3 | RV1103 通过 CX2 USB 直连。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
+| Linux x86-64 与 Linux ARM64，SDK 3.1.0，ABI v3 | 使用相同的 CX2 协议和六档 C/C++ 接口。查阅对应架构的离线与单机实测回执。 |
 
 实机验收使用一台相机，比较导出 PLY 与相机传回的同帧 XYZ，并检查有效深度、视频和会话释放。表中的标称测距指标来自传感器数据手册。
 
@@ -2298,6 +2298,8 @@ SDK 根据 USB 枚举序号、物理网卡和相机首次启动时生成的设�
 在包根目录运行 PowerShell 脚本 Script/diagnose_cxwl_depth_camera_usb.ps1 取得主机网卡、USB 接口和驱动报告。报告包含本机硬件标识。
 
 ### 维护与标定
+
+普通登记主机可以使用 `CxwlDepth_Reconnect` 恢复采集。设备管理器的 `CxwlDepth_RecoverDevice` 用于清理故障锁、恢复板端运行文件，需要维护授权。
 
 设备登记完成后，从 `CxwlDepth_GetDeviceManagerStateAlloc` 返回的 `usb.host_authorization_id` 读取主机授权标识。每台相机与每个上位机系统用户分别登记。
 

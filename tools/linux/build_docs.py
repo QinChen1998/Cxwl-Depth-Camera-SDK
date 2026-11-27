@@ -53,7 +53,7 @@ def build(args):
             (pages / (name + ".md")).write_text(text, encoding="utf-8")
         for name in ("terminology", "specifications", "lifecycle", "json"):
             path = pages / (name + ".md")
-            text = path.read_text(encoding="utf-8").replace("Windows 3.0.0 开发版", "SDK 3.0.0")
+            text = path.read_text(encoding="utf-8")
             text = text.replace("当前 Windows 用户", "当前 Linux 用户")
             text = text.replace("Windows 包在 `Example/bin` 提供示例启动器。", "Linux 包在 `Example/bin` 提供可执行样例。")
             path.write_text(text, encoding="utf-8")

@@ -1,4 +1,4 @@
-# Linux 深度相机 SDK 3.0.0
+# Linux 深度相机 SDK 3.1.0
 
 适用于 Ubuntu 22.04 x86-64 和小端 ARM64，公开 C ABI v3 和 C++17 封装。应用从 ABI v1 或 v2 迁移时，按 `SDK/include/DepthSdk.h` 重新编译。RV1103 相机使用随完整镜像预装的 `1.0.0-preview.3-usb-direct` 服务。本机须有 RNDIS 驱动，主机请求签名使用系统 OpenSSL 3（Ubuntu 的 `libssl3`）。
 
@@ -22,6 +22,8 @@ Example/bin/CxwlDepthDeviceManagement list
 ```
 
 Linux 设备档案与本机主机授权位于 `${XDG_DATA_HOME:-$HOME/.local/share}/DepthCameraAndTactileSensor/config`。每个 Linux 用户分别登记相机。主机授权文件保存在仅当前用户可访问的目录内，档案备份与授权文件应分开管理。连接已登记相机时，使用 `CXWL_DEPTH_TARGET_SAVED`、`CXWL_DEPTH_CONNECT_SAVED_ONLY` 和列表中的设备 ID。
+
+普通登记主机可以使用 `CxwlDepth_Reconnect` 恢复采集。设备管理器的 `CxwlDepth_RecoverDevice` 用于清理故障锁、恢复板端运行文件，需要维护授权。
 
 ## 构建客户应用与样例
 

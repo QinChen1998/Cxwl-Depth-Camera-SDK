@@ -74,4 +74,4 @@ Subscribe 提供图像帧，SubscribeEx 还提供深度帧对应的 SNR 和有�
 
 ## ABI v3 迁移
 
-Windows 3.0.0 开发版需要重新编译使用 ABI v2 的客户程序。CxwlDepthCapabilities 的模式数组扩为六项，结构为 72 字节。先比较 CxwlDepth_AbiVersion() 与头文件宏，再创建句柄。RGB 校正改用独立工具。需要点云时，在深度回调中使用 CxwlDepth_GetFramePointCloud，跨回调使用前复制 XYZ。查询板端标定版本使用 CxwlDepth_GetDeviceInfo。
+从 ABI v2 迁移到 ABI v3 时，需要用本版头文件重新编译客户程序。CxwlDepthCapabilities 的模式数组扩为六项，结构为 72 字节。先比较 CxwlDepth_AbiVersion() 与头文件宏，再创建句柄。RGB 校正改用独立工具。需要点云时，在深度回调中使用 CxwlDepth_GetFramePointCloud，跨回调使用前复制 XYZ。查询板端标定版本使用 CxwlDepth_GetDeviceInfo。
