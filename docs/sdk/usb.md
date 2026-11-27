@@ -39,6 +39,8 @@ SDK 根据 USB 枚举序号、物理网卡和相机首次启动时生成的设�
 
 ## 维护与标定
 
+普通登记主机可以使用 `CxwlDepth_Reconnect` 恢复采集。设备管理器的 `CxwlDepth_RecoverDevice` 用于清理故障锁、恢复板端运行文件，需要维护授权。
+
 设备登记完成后，从 `CxwlDepth_GetDeviceManagerStateAlloc` 返回的 `usb.host_authorization_id` 读取主机授权标识。每台相机与每个上位机系统用户分别登记。
 
 停止并释放采集会话，再使用设备管理中的维护功能，或启动独立工具 CxwlRgbCalibration.exe 进行 RGB 校正。板端核对受管文件和该主机的独立操作权限。权限不足时联系设备管理员，并提供设备序号及主机授权标识。成功的 RGB 标定可从校正状态、实际 ISP 试载回执及 IQ 摘要复核。

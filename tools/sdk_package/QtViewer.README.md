@@ -1,6 +1,6 @@
 # CXWL 深度相机 SDK Viewer
 
-适用于 Windows x64 USB 直连预览，SDK 3.0.0 / ABI v3。将一台预装 `1.0.0-preview.3-usb-direct` 服务的相机接入 USB，在「设备管理」中登记或选择相机。一个 Viewer 进程使用一个深度／RGB 采集会话。 [SDK 调用源码](demo/DepthSdkClient.cpp) · [可选双机选机](../README.md#在两台相机中选择目标)
+适用于 Windows x64 USB 直连，SDK 3.1.0 / ABI v3。将一台预装 `1.0.0-preview.3-usb-direct` 服务的相机接入 USB，在「设备管理」中登记或选择相机。一个 Viewer 进程使用一个深度／RGB 采集会话。 [SDK 调用源码](demo/DepthSdkClient.cpp) · [可选双机选机](../README.md#在两台相机中选择目标)
 
 ## 窗口与操作
 

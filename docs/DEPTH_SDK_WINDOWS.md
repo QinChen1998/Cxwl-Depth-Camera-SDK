@@ -1,8 +1,8 @@
-# CXWL Depth Camera SDK 3.0.0 开发版 · Windows x64
+# CXWL Depth Camera SDK 3.1.0 · Windows x64
 
-本地 USB 直连构建使用 SDK 3.0.0、ABI v3，配套预装 `1.0.0-preview.3-usb-direct` 服务的相机。SDK 经 USB RNDIS 网卡使用 CX2 TCP 8943。
+本版使用 SDK 3.1.0、ABI v3，配套预装 `1.0.0-preview.3-usb-direct` 服务的相机。SDK 经 USB RNDIS 网卡使用 CX2 TCP 8943。
 
-C/C++ 共用一个 DLL、导入库和 ABI v3。C++ 可使用 DepthSdk.hpp 的辅助类型。SDK 3.0.0 提供 46 个公开函数以及 8×8、16×16、48×32 米制深度和原视频回调。每个进程使用一个采集会话。调用 `CxwlDepth_Connect` 或 `CxwlDepth_SetMode` 时传入相应 SDK 模式常量。 [六档模式值与厂商测距范围](sdk/specifications.md#原生深度档位与测距范围) · [API 参考](DEPTH_SDK_API_REFERENCE.md)
+C/C++ 共用一个 DLL、导入库和 ABI v3。C++ 可使用 DepthSdk.hpp 的辅助类型。SDK 3.1.0 提供 46 个公开函数以及 8×8、16×16、48×32 米制深度和原视频回调。每个进程使用一个采集会话。调用 `CxwlDepth_Connect` 或 `CxwlDepth_SetMode` 时传入相应 SDK 模式常量。 [六档模式值与厂商测距范围](sdk/specifications.md#原生深度档位与测距范围) · [API 参考](DEPTH_SDK_API_REFERENCE.md)
 
 ## 连接与断开
 

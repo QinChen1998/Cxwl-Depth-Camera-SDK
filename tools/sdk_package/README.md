@@ -1,8 +1,8 @@
-# RGBD 深度相机 C/C++ SDK 3.0.0 · Windows 设备服务预览
+# RGBD 深度相机 C/C++ SDK 3.1.0 · Windows USB 直连
 
 获取 **8×8、16×16 或 48×32 的米制径向深度、板端 XYZ 点云、同帧 SNR／有效位和 2304×1296 RGB8 视频**。三种分辨率均有普通和高精度档。周期 66 ms、积分 600k、SNR 阈值 6 的历史实验中，两个 48×32 档的深度输出均约 15 Hz。C/C++ 共用 DLL。 [六档模式值、量程与测量条件](Doc/api/Chinese/sdk_specifications.html)
 
-SDK 3.0.0 使用 ABI v3。普通与高精度模式的 TMF8829 默认积分均为 1200K。
+SDK 3.1.0 使用 ABI v3。普通与高精度模式的 TMF8829 默认积分均为 1200K。
 
 [示例速查](Example/README.md) · [选择连接方式](Doc/api/Chinese/sdk_lifecycle.html) · [HTML 手册](Doc/api/Chinese/index.html) · [单文件 PDF](Doc/api/Chinese/API_REFERENCE.pdf) · [读取录制的点云](Doc/api/Chinese/sdk_data.html#sdk_recorded_ply) · [客户版点云读取说明（PDF）](Doc/api/Chinese/点云录制数据读取说明.pdf)
 

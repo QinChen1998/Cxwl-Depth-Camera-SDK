@@ -6,7 +6,7 @@
 | 项目 | 内容 |
 |---|---|
 | 产品 | RGBD 深度相机 |
-| SDK | Windows 3.0.0 开发版（ABI v3） |
+| SDK | 3.1.0（ABI v3） |
 | 相机服务 | RV1103 固定地址完整镜像预装 `1.0.0-preview.3-usb-direct`。 |
 
 @anchor sdk_depth_presets
@@ -32,8 +32,8 @@
 
 | 主机与接口 | 相机与验证范围 |
 |---|---|
-| Windows x64，SDK 3.0.0，ABI v3 | RV1103 通过 CX2 USB 直连。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
-| Linux x86-64 与 Linux ARM64，SDK 3.0.0，ABI v3 | 使用相同的 CX2 协议和六档 C/C++ 接口。查阅对应架构的离线与单机实测回执。 |
+| Windows x64，SDK 3.1.0，ABI v3 | RV1103 通过 CX2 USB 直连。SDK 提供六个采集档位，Viewer 提供两个 48×32 档位。 |
+| Linux x86-64 与 Linux ARM64，SDK 3.1.0，ABI v3 | 使用相同的 CX2 协议和六档 C/C++ 接口。查阅对应架构的离线与单机实测回执。 |
 
 实机验收使用一台相机，比较导出 PLY 与相机传回的同帧 XYZ，并检查有效深度、视频和会话释放。表中的标称测距指标来自传感器数据手册。
 
